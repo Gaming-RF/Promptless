@@ -86,7 +86,7 @@ func _initialize() -> void:
 	await key(KEY_TAB)
 	check(desk.term.input.text == "open ball_3.png ", "Tab completes the file name: '%s'" % desk.term.input.text)
 	await key(KEY_ENTER)
-	check(desk.pictures.has("ball_3.png"), "typed open makes a window")
+	check(desk.picture("ball_3.png") != null, "typed open makes a window")
 	await key(KEY_UP)
 	check(desk.term.input.text == "open ball_3.png ", "Up arrow recalls last command")
 	await key(KEY_DOWN)
@@ -95,7 +95,7 @@ func _initialize() -> void:
 	await key(KEY_ENTER)
 	check(term_text(desk).count("notes.txt") >= 2, "focus survived submit (typed ls ran)")
 
-	var w = desk.pictures["ball_3.png"]
+	var w = desk.picture("ball_3.png")
 	var before: Vector2 = w.get_content_size()
 	await key(KEY_DOWN)
 	check(w.get_content_size() == before, "arrow keys don't resize while typing")

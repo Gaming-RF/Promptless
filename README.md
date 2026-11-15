@@ -38,7 +38,10 @@ To swap one, replace the file with the same name and re-import:
 - Click a picture, then arrow keys resize 1px (Shift: 8px).
 - Clicking the red command in the email pastes it into the terminal (job 1 only).
 - Terminal: Tab completes commands and file names; Up/Down recall history.
-- Jobs only need `ls`, `grep`, `open`. Also working, Linux-style: `help cat head less echo pwd
+- Jobs only need `ls`, `grep`, `open` (`cd`, `ls -a` and `man` also work, for later chapters). Also working, Linux-style: `help cat head less echo pwd
   history alias ps clear mv` (`mv` says the client folder is read-only; `alias` shows `open` is
   the previous owner's shortcut). Typos get "did you mean".
+- Files: client folders are read-only; your home folder (`~`) is writable and every SNAP is
+  saved there (`ls ~`, `open ~/snapshot_1.png`). Jobs can add folders and hidden files with
+  `extra_files` in their JSON.
 - "music: on/off" button bottom-right.

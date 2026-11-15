@@ -67,8 +67,10 @@ func _ready() -> void:
 func load_job(j: Dictionary) -> void:
 	job = j
 	var old_history: Array = shell.history if shell else []
+	var old_home: Dictionary = shell.fs.export_under(shell.fs.home) if shell else {}
 	shell = Shell.new(job)
 	shell.history = old_history
+	shell.fs.import_nodes(old_home)
 	attachment = null
 	finished = false
 	for w in pictures.values():
@@ -104,22 +106,33 @@ func run_command(line: String) -> void:
 func running_programs() -> Array:
 	var list: Array = [{"pid": 101, "cmd": "sh"}, {"pid": 102, "cmd": "mail"}]
 	for f in pictures:
-		list.append({"pid": pictures[f].pid, "cmd": "%s %s" % [job.shell.viewer, f]})
+		list.append({"pid": pictures[f].pid, "cmd": "%s %s" % [job.shell.viewer, f.get_file()]})
 	return list
 
 
 var _next_pid := 140
 
 
+func picture(name: String):
+	var path: String = shell.fs.absolute(shell.cwd, name)
+	if pictures.has(path):
+		return pictures[path]
+	for p in pictures:
+		if p.get_file() == name:
+			return pictures[p]
+	return null
+
+
 func open_picture(file: String):
 	if pictures.has(file):
 		_focus(pictures[file], false)
 		return pictures[file]
-	var info := JobData.picture_info(job, file)
+	var info: Dictionary = shell.fs.node(file)
 	var w = PictureWindow.new()
 	add_child(w)
 	var k := pictures.size() % 6
-	w.setup(file, JobData.picture_texture(job, file), JobData.picture_index(job, file),
+	var tex: Texture2D = UI.find([info.get("asset", "")])
+	w.setup(file, tex, JobData.picture_index(job, file.get_file()),
 		Vector2(info.open_size[0], info.open_size[1]), job.ui.snap)
 	w.position = Vector2(326 + 18 * k, 10 + 14 * k)
 	w.keep_on_screen()
@@ -140,6 +153,11 @@ func snapshot(w) -> void:
 		"name": "snapshot_%d.png" % snap_count,
 		"windows": [{"file": w.file, "w": s.x, "h": s.y}],
 	}
+	shell.fs.add_file(shell.fs.home + "/" + attachment.name, {
+		"type": "picture",
+		"open_size": [s.x, s.y],
+		"asset": shell.fs.node(w.file).get("asset", ""),
+	})
 	w.flash()
 	email.show_attachment(attachment.name)
 

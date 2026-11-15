@@ -33,10 +33,11 @@
 			"open_usage": "usage: open FILE",
 			"open_text": "{n} lines of chaos. Try grep.",
 			"help": [
-				"needed: ls  grep  open",
+				"needed: ls  grep  open  cd  man",
 				"also: cat head less echo pwd",
 				"      history alias ps clear mv",
-				"Tab completes. Up/Down = history."
+				"Tab completes. Up/Down = history.",
+				"man COMMAND explains one."
 			],
 			"viewer": "pixview",
 			"alias": [
@@ -45,7 +46,69 @@
 			"cat_picture": "{cmd}: {file}: that's a picture. try open",
 			"mv_readonly": "mv: cannot move '{file}': Read-only file system",
 			"mv_usage": "usage: mv FILE DEST",
-			"read_usage": "usage: {cmd} FILE"
+			"read_usage": "usage: {cmd} FILE",
+			"man_usage": "What manual page do you want?",
+			"man": {
+				"ls": [
+					"LS(1)",
+					"  ls [-a] [FOLDER]",
+					"  List the files in a folder.",
+					"  -a   also list hidden files,",
+					"       the ones whose names start with ."
+				],
+				"grep": [
+					"GREP(1)",
+					"  grep [-i] WORD FILE...",
+					"  Print the lines of FILE that contain WORD.",
+					"  Capitals count: Gold is not gold.",
+					"  -i   ignore capitals"
+				],
+				"open": [
+					"OPEN(1)",
+					"  open FILE",
+					"  Open a picture in its viewer window.",
+					"  (a shortcut: see alias)"
+				],
+				"cd": [
+					"CD(1)",
+					"  cd [FOLDER]",
+					"  Move into FOLDER.",
+					"  cd ..   up one folder",
+					"  cd ~    your home folder",
+					"  cd      also your home folder"
+				],
+				"man": [
+					"MAN(1)",
+					"  man COMMAND",
+					"  Show the manual page for COMMAND."
+				],
+				"cat": [
+					"CAT(1)",
+					"  cat FILE",
+					"  Print a whole text file."
+				],
+				"head": [
+					"HEAD(1)",
+					"  head [-n N] FILE",
+					"  Print the first N lines (10 if not given)."
+				],
+				"mv": [
+					"MV(1)",
+					"  mv FILE DEST",
+					"  Move or rename a file.",
+					"  Client folders are read-only."
+				],
+				"pwd": [
+					"PWD(1)",
+					"  pwd",
+					"  Print the folder you are in."
+				],
+				"ps": [
+					"PS(1)",
+					"  ps",
+					"  List running programs and their numbers."
+				]
+			}
 		},
 		"ui": {
 			"attach_none": "attach: none (use SNAP)",
@@ -55,6 +118,7 @@
 			"reply_prefix": "Re: ",
 			"music_on": "music: on",
 			"music_off": "music: off"
-		}
+		},
+		"home": "/home/you"
 	}
 }

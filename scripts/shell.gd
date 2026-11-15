@@ -1,24 +1,25 @@
 extends RefCounted
 
-const COMMANDS := ["grep", "ls", "open"]
+const VFS = preload("res://scripts/vfs.gd")
+const COMMANDS := ["cd", "grep", "ls", "man", "open"]
 const COURTESY := ["alias", "cat", "clear", "echo", "head", "help", "history", "less", "mv", "ps", "pwd"]
 
 var job: Dictionary
+var fs
+var cwd := "/"
 var history: Array = []
 var _token_re := RegEx.new()
 
 
 func _init(j: Dictionary) -> void:
 	job = j
+	fs = VFS.new(job)
+	cwd = job.folder
 	_token_re.compile("\"([^\"]*)\"|'([^']*)'|(\\S+)")
 
 
 func files() -> Array:
-	var names: Array = job.texts.keys()
-	for p in job.pictures:
-		names.append(p.file)
-	names.sort()
-	return names
+	return fs.children(cwd)
 
 
 func run(line: String, programs: Array = []) -> Dictionary:
@@ -34,7 +35,11 @@ func run(line: String, programs: Array = []) -> Dictionary:
 	var cmd: String = args.pop_front()
 	match cmd:
 		"ls":
-			res.out.append("  ".join(files()))
+			_ls(args, res)
+		"cd":
+			_cd(args, res)
+		"man":
+			_man(args, res)
 		"grep":
 			_grep(args, res)
 		"open":
@@ -44,7 +49,7 @@ func run(line: String, programs: Array = []) -> Dictionary:
 		"clear":
 			res.clear = true
 		"pwd":
-			res.out.append(job.folder)
+			res.out.append(cwd)
 		"echo":
 			res.out.append(" ".join(args))
 		"history":
@@ -67,12 +72,7 @@ func run(line: String, programs: Array = []) -> Dictionary:
 				n = args.pop_front().substr(1).to_int()
 			_print_text(cmd, args, res, n)
 		"mv":
-			if args.size() < 2:
-				res.out.append(job.shell.mv_usage)
-			elif resolve(args[0]) == "":
-				_missing("mv", args[0], res)
-			else:
-				res.out.append(job.shell.mv_readonly.format({"file": args[0]}))
+			_mv(args, res)
 		_:
 			var s := closest(cmd, COMMANDS + COURTESY, 2)
 			if s != "":
@@ -86,17 +86,30 @@ func complete(line: String) -> Dictionary:
 	var cut := line.rfind(" ")
 	var head := line.substr(0, cut + 1)
 	var word := line.substr(cut + 1)
-	var pool: Array = (COMMANDS + COURTESY) if cut == -1 else files()
-	var matches: Array = pool.filter(func(n): return n.begins_with(word))
+	var dir_part := ""
+	var partial := word
+	var pool: Array
+	if cut == -1:
+		pool = COMMANDS + COURTESY
+	else:
+		var slash := word.rfind("/")
+		if slash != -1:
+			dir_part = word.substr(0, slash + 1)
+			partial = word.substr(slash + 1)
+		var dir: String = fs.absolute(cwd, dir_part) if dir_part != "" else cwd
+		pool = fs.children(dir, partial.begins_with("."))
+		pool = pool.map(func(n): return n + "/" if fs.is_dir(fs.absolute(dir, n)) else n)
+	var matches: Array = pool.filter(func(n): return n.begins_with(partial))
 	if matches.is_empty():
 		return {"line": line, "options": []}
 	if matches.size() == 1:
-		return {"line": head + matches[0] + " ", "options": []}
+		var m: String = matches[0]
+		return {"line": head + dir_part + m + ("" if m.ends_with("/") else " "), "options": []}
 	var prefix: String = matches[0]
 	for m in matches:
 		while not m.begins_with(prefix):
 			prefix = prefix.left(-1)
-	return {"line": head + prefix, "options": matches if prefix == word else []}
+	return {"line": head + dir_part + prefix, "options": matches if prefix == partial else []}
 
 
 func tokenize(line: String) -> Array:
@@ -110,11 +123,8 @@ func tokenize(line: String) -> Array:
 
 
 func resolve(name: String) -> String:
-	if name.begins_with("./"):
-		name = name.substr(2)
-	elif name.begins_with(job.folder + "/"):
-		name = name.substr(job.folder.length() + 1)
-	return name if name in files() else ""
+	var path: String = fs.absolute(cwd, name)
+	return path if fs.exists(path) else ""
 
 
 func suggest_file(typed: String) -> String:
@@ -167,6 +177,54 @@ func _missing(cmd: String, typed: String, res: Dictionary, whole := "") -> void:
 		res.hint.append(job.shell.did_you_mean_file.format({"s": s}))
 
 
+func _ls(args: Array, res: Dictionary) -> void:
+	var show_hidden := false
+	var targets: Array = []
+	for a in args:
+		if a.begins_with("-"):
+			show_hidden = show_hidden or "a" in a
+		else:
+			targets.append(a)
+	if targets.is_empty():
+		targets = ["."]
+	for t in targets:
+		var path := resolve(t)
+		if path == "":
+			res.out.append("ls: cannot access '%s': No such file or directory" % t)
+		elif not fs.is_dir(path):
+			res.out.append(t)
+		else:
+			if targets.size() > 1:
+				res.out.append(t + ":")
+			var names: Array = fs.children(path, show_hidden)
+			if show_hidden:
+				names = [".", ".."] + names
+			if not names.is_empty():
+				res.out.append("  ".join(names))
+
+
+func _cd(args: Array, res: Dictionary) -> void:
+	var target: String = "~" if args.is_empty() else args[0]
+	var path := resolve(target)
+	if path == "":
+		res.out.append("cd: %s: No such file or directory" % target)
+	elif not fs.is_dir(path):
+		res.out.append("cd: %s: Not a directory" % target)
+	else:
+		cwd = path
+
+
+func _man(args: Array, res: Dictionary) -> void:
+	if args.is_empty():
+		res.out.append(job.shell.man_usage)
+		return
+	var pages: Dictionary = job.shell.get("man", {})
+	if pages.has(args[0]):
+		res.out.append_array(pages[args[0]])
+	else:
+		res.out.append("No manual entry for %s" % args[0])
+
+
 func _grep(args: Array, res: Dictionary) -> void:
 	var ignore_case := false
 	var rest: Array = []
@@ -183,17 +241,22 @@ func _grep(args: Array, res: Dictionary) -> void:
 	var matched := false
 	var missing := false
 	for f in targets:
-		var name := resolve(f)
-		if name == "":
+		var path := resolve(f)
+		if path == "":
 			_missing("grep", f, res)
 			missing = true
 			continue
-		if not job.texts.has(name):
+		var n: Dictionary = fs.node(path)
+		if n.type == "dir":
+			res.out.append("grep: %s: Is a directory" % f)
+			missing = true
 			continue
-		for l in job.texts[name]:
+		if n.type != "text":
+			continue
+		for l in n.lines:
 			var hit: bool = l.to_lower().contains(word.to_lower()) if ignore_case else l.contains(word)
 			if hit:
-				res.out.append(("%s:%s" % [name, l]) if targets.size() > 1 else l)
+				res.out.append(("%s:%s" % [f, l]) if targets.size() > 1 else l)
 				matched = true
 	if not matched and not missing:
 		res.hint.append(job.shell.grep_no_match)
@@ -203,24 +266,54 @@ func _print_text(cmd: String, args: Array, res: Dictionary, limit: int) -> void:
 	if args.is_empty():
 		res.out.append(job.shell.read_usage.format({"cmd": cmd}))
 		return
-	var name := resolve(args[0])
-	if name == "":
+	var path := resolve(args[0])
+	if path == "":
 		_missing(cmd, args[0], res)
-	elif not job.texts.has(name):
-		res.out.append(job.shell.cat_picture.format({"cmd": cmd, "file": name}))
+		return
+	var n: Dictionary = fs.node(path)
+	if n.type == "dir":
+		res.out.append("%s: %s: Is a directory" % [cmd, args[0]])
+	elif n.type != "text":
+		res.out.append(job.shell.cat_picture.format({"cmd": cmd, "file": args[0]}))
 	else:
-		var lines: Array = job.texts[name]
-		res.out.append_array(lines if limit < 0 else lines.slice(0, limit))
+		res.out.append_array(n.lines if limit < 0 else n.lines.slice(0, limit))
 
 
 func _open(args: Array, res: Dictionary) -> void:
 	if args.is_empty():
 		res.out.append(job.shell.open_usage)
 		return
-	var name := resolve(args[0])
-	if name == "":
+	var path := resolve(args[0])
+	if path == "":
 		_missing("open", args[0], res, " ".join(args))
-	elif job.texts.has(name):
-		res.out.append(job.shell.open_text.format({"n": job.texts[name].size()}))
+		return
+	var n: Dictionary = fs.node(path)
+	if n.type == "dir":
+		res.out.append("open: %s: Is a directory" % args[0])
+	elif n.type == "text":
+		res.out.append(job.shell.open_text.format({"n": n.lines.size()}))
 	else:
-		res.open = name
+		res.open = path
+
+
+func _mv(args: Array, res: Dictionary) -> void:
+	if args.size() < 2:
+		res.out.append(job.shell.mv_usage)
+		return
+	var src := resolve(args[0])
+	if src == "":
+		_missing("mv", args[0], res)
+		return
+	var dest: String = fs.absolute(cwd, args[1])
+	if fs.is_dir(dest):
+		dest = dest + "/" + src.get_file()
+	if not fs.writable(src) or not fs.writable(dest.get_base_dir()):
+		res.out.append(job.shell.mv_readonly.format({"file": args[0]}))
+		return
+	if not fs.is_dir(dest.get_base_dir()):
+		res.out.append("mv: cannot move '%s': No such file or directory" % args[0])
+		return
+	if dest == src or dest.begins_with(src + "/"):
+		res.out.append("mv: cannot move '%s' into itself" % args[0])
+		return
+	fs.move(src, dest)

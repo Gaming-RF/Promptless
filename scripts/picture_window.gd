@@ -15,7 +15,7 @@ var _readout_id := 0
 func setup(file_name: String, tex: Texture2D, variant: int, open_size: Vector2, snap_text: String) -> void:
 	file = file_name
 	resizable = true
-	set_title(file_name)
+	set_title(file_name.get_file())
 	view.texture = tex
 	view.variant = variant
 	view.mouse_filter = MOUSE_FILTER_IGNORE

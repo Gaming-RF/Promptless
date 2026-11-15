@@ -63,6 +63,45 @@ func check_job_data(job: Dictionary) -> void:
 	check(Judge.verdict(rec(other, w, h), job) == "wrong_file", tag + "wrong picture at target = wrong file")
 
 
+func check_file_system(base: Dictionary) -> void:
+	var job := JobData.merge(base, {"extra_files": [
+		{"path": ".album", "type": "dir"},
+		{"path": ".album/faded_1.png", "type": "picture", "open_size": [120, 90], "asset": "res://assets/ball_1.png"},
+		{"path": ".album/readme.txt", "type": "text", "lines": ["two copies. lay one over the other."]},
+	]})
+	var sh = Shell.new(job)
+	check(not ".album" in sh.run("ls").out[0], "fs: hidden folder not in ls")
+	check(".album" in sh.run("ls -a").out[0] and sh.run("ls -a").out[0].begins_with(".  .."), "fs: ls -a shows hidden + . ..")
+	sh.run("cd .album")
+	check(sh.cwd == "/clients/dex/.album" and sh.run("pwd").out == ["/clients/dex/.album"], "fs: cd into hidden folder, pwd")
+	check(sh.run("ls").out == ["faded_1.png  readme.txt"], "fs: ls inside folder")
+	check(sh.run("cat readme.txt").out.size() == 1 and sh.run("grep copies ../.album/readme.txt").out.size() == 1, "fs: relative paths, ..")
+	check(sh.run("open faded_1.png").open == "/clients/dex/.album/faded_1.png", "fs: open in subfolder")
+	sh.run("cd ..")
+	check(sh.cwd == "/clients/dex", "fs: cd ..")
+	sh.run("cd")
+	check(sh.cwd == "/home/you", "fs: cd alone = home")
+	sh.run("cd ~")
+	check(sh.cwd == "/home/you", "fs: cd ~")
+	check(sh.run("cd /nope").out[0] == "cd: /nope: No such file or directory", "fs: cd missing")
+	check(sh.run("cd /clients/dex/notes.txt").out[0].ends_with("Not a directory"), "fs: cd into a file")
+	check(sh.run("cat /clients/dex").out[0].ends_with("Is a directory"), "fs: cat a folder")
+	check(sh.run("grep x /clients").out[0].ends_with("Is a directory"), "fs: grep a folder")
+	check("Read-only" in sh.run("mv /clients/dex/notes.txt ~/n.txt").out[0], "fs: client folder read-only")
+	sh.fs.add_file("/home/you/snap.png", {"type": "picture", "open_size": [10, 10]})
+	sh.run("mkdir x")
+	sh.fs.add_dir("/home/you/keep")
+	check(sh.run("mv snap.png keep").out.is_empty() and sh.fs.exists("/home/you/keep/snap.png"), "fs: mv into folder in home")
+	sh.run("mv keep stuff")
+	check(sh.fs.exists("/home/you/stuff/snap.png") and not sh.fs.exists("/home/you/keep"), "fs: mv a folder moves contents")
+	check(sh.run("mv stuff stuff/inner").out[0].contains("into itself"), "fs: mv folder into itself refused")
+	check(sh.run("man ls").out[0] == "LS(1)" and sh.run("man").out == [job.shell.man_usage], "man page + usage")
+	check(sh.run("man frob").out == ["No manual entry for frob"], "man unknown")
+	sh.run("cd /clients/dex")
+	check(sh.complete("cd .al").line == "cd .album/", "tab: hidden folder gets a slash, no space")
+	check(sh.complete("open .album/fa").line == "open .album/faded_1.png ", "tab: completes inside a folder path")
+
+
 func _initialize() -> void:
 	var c := JobData.load_campaign("res://data/campaign.json")
 	check(c.jobs.size() == 2, "campaign has 2 jobs")
@@ -83,7 +122,7 @@ func _initialize() -> void:
 	r = sh.run("open notes.txt")
 	check(r.out == ["30 lines of chaos. Try grep."], "open notes.txt -> chaos line: " + str(r.out))
 	r = sh.run("open /clients/dex/ball_3.png")
-	check(r.open == "ball_3.png", "open full path picture")
+	check(r.open == "/clients/dex/ball_3.png", "open full path picture")
 	r = sh.run("open ball 3")
 	check(r.open == "" and r.hint.size() == 1 and "ball_3.png" in r.hint[0], "open ball 3 -> did you mean ball_3.png")
 	r = sh.run("open bal_3.png")
@@ -118,6 +157,7 @@ func _initialize() -> void:
 	check(amb.line == "open ball_" and amb.options.is_empty(), "tab: common prefix")
 	amb = sh.complete("open ball_")
 	check(amb.options.size() == 5, "tab: lists options when stuck")
+	check_file_system(job)
 	var sh2 = Shell.new(c.jobs[1])
 	r = sh2.run("grep Gold notes.txt")
 	check(r.out.is_empty(), "job 2: notes.txt only has lowercase gold")
@@ -138,8 +178,8 @@ func _initialize() -> void:
 	desk.run_command("open ball_3.png")
 	desk.run_command("open ball_1.png")
 	await process_frame
-	var w3 = desk.pictures["ball_3.png"]
-	var w1 = desk.pictures["ball_1.png"]
+	var w3 = desk.picture("ball_3.png")
+	var w1 = desk.picture("ball_1.png")
 	check(w3.get_content_size() == Vector2(96, 160), "ball 3 opens at 96x160")
 	desk.send()
 	check(desk.email.last_reply == job.replies.no_attachment, "send with nothing")
@@ -154,13 +194,17 @@ func _initialize() -> void:
 	desk.snapshot(w3)
 	desk.send()
 	check(desk.email.last_reply == job.replies.right and desk.finished, "job 1 won")
+	check(desk.shell.fs.exists("/home/you/snapshot_3.png"), "snapshots are saved in the home folder")
 	await create_timer(2.6).timeout
 	check(main.current == desk and desk.job == c.jobs[1], "job 2 loads on the same desktop")
 	check(desk.pictures.is_empty() and not desk.finished, "job 2 starts clean")
+	check(desk.shell.fs.exists("/home/you/snapshot_3.png"), "home folder carries over to job 2")
+	desk.run_command("open ~/snapshot_3.png")
+	check(desk.picture("snapshot_3.png") != null and desk.picture("snapshot_3.png").get_content_size() == Vector2(160, 160), "a snapshot opens at the size it was taken")
 	var job2: Dictionary = c.jobs[1]
 	desk.run_command("open " + job2.answer)
 	await process_frame
-	var wa = desk.pictures[job2.answer]
+	var wa = desk.picture(job2.answer)
 	wa.set_content_size(Vector2(job2.target.w, job2.target.h))
 	desk.snapshot(wa)
 	desk.send()
