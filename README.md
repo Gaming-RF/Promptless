@@ -4,9 +4,10 @@ Help them bounce back. Two jobs, ~3 minutes. Job 1 (fix): read Dex's email -> `g
 -> `open ball_3.png` -> stretch the window until the ball is round -> SNAP -> Send. Job 2 (teach): Dex
 wants to learn, so you send commands to his own laptop with `write dex ...` until he opens the
 newsletter photo himself. The end screen lists who bounced back.
-Title screen: how to play, settings (music, volumes, big text, fullscreen, reset), and a
-"full game (draft)" button (remove `other_campaigns` from `data/campaign.json` before a jam upload:
-its placeholder art isn't shippable).
+Title screen: how to play, settings (music, volumes, big text, fullscreen, reset). The full-game
+draft isn't on the jam title (placeholder art); add `"other_campaigns": [{"label": "full game (draft)",
+"path": "res://data/full/campaign.json"}]` to `data/campaign.json` to show it again (desktop runs only:
+the web export leaves out `data/full/`).
 
 - **Run:** `godot --path .` (or F5 in the editor)
 - **Full-game draft:** `godot --path . -- --campaign=res://data/full/campaign.json`
