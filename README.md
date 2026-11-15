@@ -26,8 +26,8 @@ its placeholder art isn't shippable).
 
 - **After dropping in assets:** open the editor once (or `godot --headless --path . --import`)
   so Godot imports them, otherwise they won't load.
-- **Web embed size:** integer scaling, so make the embed a multiple of 640x360 (1280x720, 1920x1080)
-  or it shows at 1x with borders.
+- **Scaling:** the 640x360 game scales smoothly to fill any window or embed, keeping 16:9
+  (thin bars if the shape differs). 1280x720 is still the sharpest embed size.
 
 ## Docs
 - `docs/CONTRACTS.md` — shell↔desktop result, snapshot record, screen/palette

@@ -70,7 +70,7 @@ missing replies are reported when a campaign loads, and `tests/run_tests.gd` fai
 
 | Thing | Value | Where |
 |---|---|---|
-| Screen | 640×360, integer scaling, `canvas_items` stretch | `project.godot` |
+| Screen | 640×360, fractional (auto) scaling to fit, aspect kept, `canvas_items` stretch | `project.godot` |
 | Title bar | 10 px, 1 px border; active window = lighter bar + 2 px light underline | `desk_window.gd` |
 | Palette | Sweetie 16; `CLICK` reserved for clickable things, always with a border, underline or `>` | `palette.gd` |
 | Font | Press Start 2P at 8 px (multiples of 8 only) | `ui.gd` `FONT_SIZE` |
