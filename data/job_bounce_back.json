@@ -1,0 +1,97 @@
+{
+	"title": "Promptless: Bounce Back",
+	"tagline": "Every AI went dark. Your old computer didn't.",
+	"boot_button": "boot up",
+
+	"client": {
+		"name": "Dex",
+		"portrait_calm": "res://assets/dex_calm.png",
+		"portrait_panic": "res://assets/dex_panic.png"
+	},
+
+	"folder": "/clients/dex",
+
+	"email": {
+		"from": "Dex",
+		"subject": "HELP game at 9",
+		"body": "HELP game at 9. Our poster bot is dead and every photo of the game ball came out squashed flat. I need the Comets ball back in shape and I have 5 photos and no clue. My roommate said type grep Comets notes.txt then open whatever it says??\n\nDex",
+		"clickable": ["grep Comets notes.txt"]
+	},
+
+	"notes_file": "notes.txt",
+	"notes": [
+		"TEAM NOTES - DO NOT DELETE (Jordan this means you)",
+		"practice moved to Tues?? or Weds. ask Priya",
+		"bus leaves 7:15. Coach says 7:15 means 7:00",
+		"snacks: orange slices, NOT the sour kind",
+		"jersey #12 still missing. lost & found?",
+		"ball 1 = the old practice ball from the shed",
+		"Hornets have the other court at 6",
+		"poster bot said 'done!' then died. great.",
+		"photos: Sam took 5 of the game ball, all bad",
+		"ball 2 = Sam's cousin's ball, has a sticker",
+		"remember: shin pads, water, ID",
+		"ref is the tall one from last year. be nice",
+		"Priya's mum is bringing the big cooler",
+		"warmup song vote: tied again",
+		"who has the pump??? (not me) - Leo",
+		"ball 4 = school ball, fine for drills",
+		"parents: please park on the far side",
+		"photo day re-do maybe next week",
+		"Comets game ball = ball 3. Coach says it has to be perfectly round.",
+		"chant ideas: still bad. keep trying",
+		"ball 5 = the one the dog got to",
+		"fundraiser cookies: 40 sold, 12 eaten by us",
+		"Jordan: stop drawing on the whiteboard",
+		"poster needs: team name, date, the ball, BIG",
+		"library printer works if you kick it",
+		"Leo found the pump. it was in Leo's bag",
+		"away kits are in the blue bag, not the red one",
+		"Coach's number is on the fridge sheet",
+		"after-game pizza: pineapple debate banned",
+		"if anyone reads this far, grep exists. - roommate"
+	],
+
+	"pictures": [
+		{ "file": "ball_1.png", "open_size": [160, 104] },
+		{ "file": "ball_2.png", "open_size": [124, 160] },
+		{ "file": "ball_3.png", "open_size": [96, 160] },
+		{ "file": "ball_4.png", "open_size": [160, 76] },
+		{ "file": "ball_5.png", "open_size": [80, 160] }
+	],
+	"picture_dir": "res://assets/",
+
+	"answer": "ball_3.png",
+	"target": { "w": 160, "h": 160, "tolerance": 6 },
+
+	"replies": {
+		"right": "IT'S ROUND. it bounces. WE bounce back. you are a wizard.",
+		"wrong_file": "Message bounced back: that's not the Comets ball.",
+		"wrong_shape": "Message bounced back: coach says that's an egg.",
+		"no_attachment": "Message bounced back: you forgot the photo??"
+	},
+
+	"shell": {
+		"prompt": "$",
+		"welcome": "oldbox shell. you are in /clients/dex",
+		"unknown": "{cmd}: this old box only knows ls, grep and open.",
+		"pipes": "not supported by this shell",
+		"grep_usage": "usage: grep WORD FILE",
+		"grep_no_match": "(nothing matched. grep cares about Capitals.)",
+		"open_usage": "usage: open FILE",
+		"open_notes": "30 lines of chaos. Try grep."
+	},
+
+	"ui": {
+		"attach_none": "attach: none (use SNAP)",
+		"attach_some": "attach: {name}",
+		"send": "Send",
+		"snap": "SNAP",
+		"reply_prefix": "Re: "
+	},
+
+	"end": {
+		"credits": "Promptless: Bounce Back - made in a day for Haven",
+		"again": "play again"
+	}
+}
