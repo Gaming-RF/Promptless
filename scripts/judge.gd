@@ -10,5 +10,7 @@ static func verdict(record, job: Dictionary) -> String:
 			continue
 		if absf(w.w - t.w) <= t.tolerance and absf(w.h - t.h) <= t.tolerance:
 			return "right"
+		if absf(w.w - w.h) <= t.tolerance:
+			return "wrong_size"
 		return "wrong_shape"
 	return "wrong_file"

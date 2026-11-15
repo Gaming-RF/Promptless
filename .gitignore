@@ -13,3 +13,6 @@ AGENTS.md
 # Exports
 build/
 *.zip
+
+# Local notes
+TODO.md

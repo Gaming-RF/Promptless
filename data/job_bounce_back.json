@@ -89,6 +89,7 @@
 	"replies": {
 		"right": "IT'S ROUND. it bounces. WE bounce back. you are a wizard.",
 		"wrong_file": "Message bounced back: that's not the Comets ball.",
-		"wrong_shape": "Message bounced back: coach says that's an egg."
+		"wrong_shape": "Message bounced back: coach says that's an egg.",
+		"wrong_size": "Message bounced back: it's round! but coach says the poster needs it 160 big."
 	}
 }

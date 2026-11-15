@@ -32,7 +32,7 @@ func check_job_data(job: Dictionary) -> void:
 	check(hits == 1, tag + "exactly one text line contains '%s' (found %d)" % [word, hits])
 	check(job.email.body.contains(word), tag + "email spells the search word the same way")
 	check(words(job.email.body) < 60, tag + "email under 60 words (%d)" % words(job.email.body))
-	for k in ["right", "wrong_file", "wrong_shape", "no_attachment"]:
+	for k in ["right", "wrong_file", "wrong_shape", "wrong_size", "no_attachment"]:
 		check(job.replies.has(k) and words(job.replies[k]) < 30, tag + "reply '%s' exists, under 30 words" % k)
 	var t: Dictionary = job.target
 	for p in job.pictures:
@@ -56,6 +56,9 @@ func check_job_data(job: Dictionary) -> void:
 	check(Judge.verdict(rec(job.answer, w, h), job) == "right", tag + "target size wins")
 	check(Judge.verdict(rec(job.answer, w - t.tolerance, h + t.tolerance), job) == "right", tag + "edge of tolerance wins")
 	check(Judge.verdict(rec(job.answer, w - t.tolerance - 1, h), job) == "wrong_shape", tag + "just outside tolerance = egg")
+	check(Judge.verdict(rec(job.answer, 100, 100), job) == "wrong_size", tag + "round but too small = wrong size")
+	check(Judge.verdict(rec(job.answer, w + 20, h + 20), job) == "wrong_size", tag + "round but too big = wrong size")
+	check(Judge.verdict(rec(job.answer, 100, h), job) == "wrong_shape", tag + "squashed = egg, not wrong size")
 	var other: String = job.pictures[0].file if job.pictures[0].file != job.answer else job.pictures[1].file
 	check(Judge.verdict(rec(other, w, h), job) == "wrong_file", tag + "wrong picture at target = wrong file")
 

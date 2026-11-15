@@ -118,7 +118,8 @@
 	"replies": {
 		"right": "PERFECT octagon. coach nodded TWICE. we bounced back and now it's in the newsletter.",
 		"wrong_file": "Message bounced back: that's not our medal.",
-		"wrong_shape": "Message bounced back: coach says that medal got sat on."
+		"wrong_shape": "Message bounced back: coach says that medal got sat on.",
+		"wrong_size": "Message bounced back: perfect shape, wrong size. the newsletter slot is 144 wide."
 	},
 	"shell": {
 		"grep_no_match": "(nothing in that file. Coach keeps his own notes.)"
