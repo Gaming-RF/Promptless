@@ -14,8 +14,12 @@ func _init(job: Dictionary) -> void:
 	client_user = String(job.client.get("user", job.client.name)).to_lower()
 	add_dir("/")
 	add_dir(home)
+	add_job(job)
+
+
+func add_job(job: Dictionary) -> void:
 	for u in job.get("users", {}):
-		if u != user:
+		if u != user and not homes.has(u):
 			homes[u] = job.users[u].get("home", "/home/" + u)
 			add_dir(homes[u])
 	add_dir(job.folder)

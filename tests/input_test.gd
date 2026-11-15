@@ -39,12 +39,13 @@ func click(pos: Vector2) -> void:
 	await mouse("up", pos)
 
 
-func key(code: Key, unicode := 0) -> void:
+func key(code: Key, unicode := 0, ctrl := false) -> void:
 	for pressed in [true, false]:
 		var e := InputEventKey.new()
 		e.keycode = code
 		e.physical_keycode = code
 		e.unicode = unicode
+		e.ctrl_pressed = ctrl
 		e.pressed = pressed
 		root.push_input(e, true)
 	await frames(1)
@@ -158,5 +159,33 @@ func _initialize() -> void:
 	var tb: Control = p1._trace_btn
 	await click(tb.get_global_rect().get_center())
 	check(p1.tracing and tb.text == "TRACING", "TRACE button toggles tracing")
+	desk.load_job(JobData.merge(desk.job, {"tools": ["join", "trace"], "check": "join", "join": {"order": ["p1.png", "p2.png"]}}))
+	await frames(2)
+	p1 = desk.open_picture(jj.folder + "/p1.png")
+	p2 = desk.open_picture(jj.folder + "/p2.png")
+	await create_timer(0.6).timeout
+	desk.term.focus_input()
+	await frames(1)
+	await key(KEY_ESCAPE)
+	check(get_root().gui_get_focus_owner() == null and desk.active_picture() != null, "keys: Escape leaves the terminal for the pictures")
+	var first = desk.active_picture()
+	await key(KEY_TAB)
+	check(desk.active_picture() != null and desk.active_picture() != first and get_root().gui_get_focus_owner() == null, "keys: Tab picks the next picture")
+	var kw = desk.active_picture()
+	var size0: Vector2 = kw.get_content_size()
+	await key(KEY_RIGHT)
+	check(kw.get_content_size() == size0 + Vector2(1, 0), "keys: arrow stretches")
+	var pos0: Vector2 = kw.position
+	await key(KEY_DOWN, 0, true)
+	check(kw.position == pos0 + Vector2(0, 1), "keys: Ctrl+arrow moves")
+	await key(KEY_T)
+	check(kw.tracing, "keys: T toggles tracing")
+	await key(KEY_S)
+	check(desk.attachment != null and desk.attachment.windows[0].file == kw.file, "keys: S takes a snapshot")
+	var reply_before: String = desk.email.last_reply
+	await key(KEY_ENTER)
+	check(desk.email.last_reply != reply_before, "keys: Enter sends")
+	await key(KEY_ESCAPE)
+	check(desk.term.input.has_focus(), "keys: Escape returns to the terminal")
 	print("\n%d failure(s)" % fails)
 	quit(1 if fails else 0)

@@ -171,7 +171,8 @@
 			"sudo_password": "[sudo] password for {user}:",
 			"sudo_wrong": "sudo: 1 incorrect password attempt",
 			"sudo_denied": "{user} is not in the sudoers file. This incident will be reported.",
-			"exit_last": "exit: nowhere to go. this is the only computer that still works."
+			"exit_last": "exit: nowhere to go. this is the only computer that still works.",
+			"more_files": "new mail. more files in {folder}"
 		},
 		"ui": {
 			"attach_none": "attach: none (use SNAP)",
@@ -180,7 +181,10 @@
 			"snap": "SNAP",
 			"reply_prefix": "Re: ",
 			"music_on": "radio: on",
-			"music_off": "radio: off"
+			"music_off": "radio: off",
+			"text_big": "text: big",
+			"text_normal": "text: normal",
+			"clock": "time {t}"
 		},
 		"home": "/home/you",
 		"users": {
@@ -189,5 +193,10 @@
 				"sudo": false
 			}
 		}
-	}
+	},
+	"save": false,
+	"continue_button": "continue",
+	"new_game_button": "new game",
+	"replay_button": "replay: {subject}",
+	"best_label": "best {t}"
 }

@@ -18,14 +18,21 @@ static func load_json(path: String) -> Dictionary:
 static func load_campaign(path: String) -> Dictionary:
 	var c := load_json(path)
 	var jobs: Array = []
-	for job_path in c.get("jobs", []):
-		var job := merge(c.get("defaults", {}), load_json(job_path))
-		for key in REQUIRED:
-			if not job.has(key):
-				push_error("job %s is missing '%s'" % [job_path, key])
-		jobs.append(job)
+	for entry in c.get("jobs", []):
+		if entry is Array:
+			jobs.append(entry.map(func(p): return _load_job(c, p)))
+		else:
+			jobs.append(_load_job(c, entry))
 	c.jobs = jobs
 	return c
+
+
+static func _load_job(c: Dictionary, job_path: String) -> Dictionary:
+	var job := merge(c.get("defaults", {}), load_json(job_path))
+	for key in REQUIRED:
+		if not job.has(key):
+			push_error("job %s is missing '%s'" % [job_path, key])
+	return job
 
 
 static func merge(a: Dictionary, b: Dictionary) -> Dictionary:
@@ -56,9 +63,11 @@ static func picture_texture(job: Dictionary, file: String) -> Texture2D:
 	return UIRef.find([job.picture_dir + file])
 
 
-static func instantiate(job: Dictionary, avoid := "") -> Dictionary:
+static func instantiate(job: Dictionary, avoid := "", force := "") -> Dictionary:
 	var j := job.duplicate(true)
-	if j.get("shuffle", false):
+	if force != "":
+		j.answer = force
+	elif j.get("shuffle", false):
 		var choices: Array = j.pictures.map(func(p): return p.file).filter(func(f): return f != avoid)
 		if not choices.is_empty():
 			j.answer = choices[randi() % choices.size()]

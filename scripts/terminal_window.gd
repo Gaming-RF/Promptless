@@ -3,10 +3,12 @@ extends "res://scripts/desk_window.gd"
 signal command_entered(line)
 signal typed
 signal tab_requested(text)
+signal escape_pressed
 
 var output := RichTextLabel.new()
 var input := LineEdit.new()
 var prompt_label: Label
+var _row: HBoxContainer
 var _history: Array = []
 var _history_pos := 0
 
@@ -25,6 +27,7 @@ func build(prompt_text: String, s: Vector2) -> void:
 	output.add_theme_color_override("default_color", Palette.TERM_TEXT)
 	content.add_child(output)
 	var row := HBoxContainer.new()
+	_row = row
 	prompt_label = UI.label(prompt_text, UI.FONT_SIZE, Palette.TERM_TEXT)
 	row.add_child(prompt_label)
 	input.size_flags_horizontal = SIZE_EXPAND_FILL
@@ -37,9 +40,22 @@ func build(prompt_text: String, s: Vector2) -> void:
 	input.gui_input.connect(_on_input_key)
 	row.add_child(input)
 	content.add_child(row)
-	var row_h := row.get_combined_minimum_size().y
-	row.position = Vector2(2, s.y - row_h - 1)
-	row.size = Vector2(s.x - 4, row_h)
+	_relayout()
+
+
+func set_text_size(px: int) -> void:
+	for c in [output, input, prompt_label]:
+		c.add_theme_font_size_override("font_size", px)
+		c.add_theme_font_size_override("normal_font_size", px)
+	_relayout()
+
+
+func _relayout() -> void:
+	var s := get_content_size()
+	_row.reset_size()
+	var row_h := _row.get_combined_minimum_size().y
+	_row.position = Vector2(2, s.y - row_h - 1)
+	_row.size = Vector2(s.x - 4, row_h)
 	output.position = Vector2(2, 1)
 	output.size = Vector2(s.x - 4, s.y - row_h - 3)
 
@@ -73,6 +89,8 @@ func _on_input_key(e: InputEvent) -> void:
 	match e.keycode:
 		KEY_TAB:
 			tab_requested.emit(input.text)
+		KEY_ESCAPE:
+			escape_pressed.emit()
 		KEY_UP:
 			if _history.is_empty():
 				return

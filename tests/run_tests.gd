@@ -326,6 +326,152 @@ func check_runner(d, base: Dictionary) -> void:
 	check(Judge.verdict({"windows": [{"file": d.job.folder + "/" + first, "w": 160, "h": 160}]}, d.job) == "wrong_file", "shuffle: the old answer is now wrong")
 
 
+func check_saving(base: Dictionary) -> void:
+	var SaveFile = load("res://scripts/save_file.gd")
+	var m = load("res://scenes/main.tscn").instantiate()
+	root.add_child(m)
+	await process_frame
+	m.save_path = "user://test_save.json"
+	SaveFile.clear(m.save_path)
+	check(not m.can_continue(), "save: jam campaign has saving off")
+	m.campaign.save = true
+	m.campaign.jobs[0] = JobData.merge(m.campaign.jobs[0], {"shuffle": true, "texts": {"notes.txt": ["Comets = ball {answer_n}"]}})
+	m.start_game(false)
+	await process_frame
+	var d = m.current
+	var answer: String = d.job.answer
+	var w = d.open_picture(d.job.folder + "/ball_2.png")
+	w.set_content_size(Vector2(130, 160))
+	w.position = Vector2(400, 30)
+	d.snapshot(w)
+	d.run_command("cd ~")
+	d.run_command("ls")
+	d.set_big_text(true)
+	d.kill(103)
+	m.save_now(true)
+	check(m.can_continue(), "save: written")
+	m.show_title()
+	await process_frame
+	var labels: Array = m.current.find_children("*", "Button", true, false).map(func(b): return b.text)
+	check(m.current.can_continue and labels == ["continue", "new game"], "save: title offers continue + new game " + str(labels))
+	m.start_game(true)
+	await process_frame
+	d = m.current
+	var w2 = d.picture("ball_2.png")
+	check(w2 != null and w2.get_content_size() == Vector2(130, 160) and w2.position == Vector2(400, 30), "save: window size + place restored")
+	check(d.shell.fs.exists("/home/you/snapshot_1.png") and d.snap_count == 1, "save: home folder + snapshot count restored")
+	check(d.shell.cwd == "/home/you" and d.shell.history.has("ls"), "save: folder + history restored")
+	check(d.big_text and not m.sfx.music_on, "save: text size + radio restored")
+	check(d.job.answer == answer, "save: shuffled answer kept")
+	var aw = d.open_picture(d.job.folder + "/" + d.job.answer)
+	aw.set_content_size(Vector2(160, 160))
+	d.snapshot(aw)
+	d.send()
+	await create_timer(2.4).timeout
+	check(m.job_index == 1 and SaveFile.read(m.save_path).job_index == 1, "save: progress saved after a win")
+	m.start_game(true)
+	await process_frame
+	check(m.current.job.search_word == "Gold", "save: continue lands on job 2")
+	var j2: Dictionary = m.current.job
+	var mw = m.current.open_picture(j2.folder + "/" + j2.answer)
+	mw.set_content_size(Vector2(j2.target.w, j2.target.h))
+	m.current.snapshot(mw)
+	m.current.send()
+	await create_timer(2.4).timeout
+	check(not m.can_continue(), "save: cleared when the campaign ends")
+	m.start_game(false)
+	await process_frame
+	m.current.set_big_text(true)
+	var t = m.current.term
+	check(t.output.get_theme_font_size("normal_font_size") == 16 and t._row.position.y + t._row.size.y <= t.get_content_size().y, "big text: terminal doubles and still fits")
+	m.current.run_command("frob")
+	check(m.current.email.body.get_theme_font_size("normal_font_size") == 16, "big text: email body doubles")
+	m.current.set_big_text(false)
+	check(t.output.get_theme_font_size("normal_font_size") == 8, "big text: back to normal")
+	SaveFile.clear(m.save_path)
+	m.queue_free()
+
+
+func check_inbox(d, c: Dictionary) -> void:
+	var won := []
+	d.job_won.connect(func(r): won.append(r))
+	d.load_jobs([c.jobs[0], c.jobs[1]])
+	var tabs: Array = d.email._buttons.get_children().map(func(b): return b.text)
+	check(tabs == [">Dex", "Dex"], "inbox: one tab per client " + str(tabs))
+	check(d.shell.fs.exists("/clients/dex/notes.txt") and d.shell.fs.exists("/clients/dex/newsletter/coach.txt"), "inbox: both folders exist")
+	d.select_job(1)
+	check(d.job.search_word == "Gold" and d.email._subj.text.contains("WE WON"), "inbox: switching shows the other email")
+	var j2: Dictionary = d.job
+	var mw = d.open_picture(j2.folder + "/photo_1.png")
+	d.snapshot(mw)
+	d.send()
+	check(d.strikes == 1 and d.slots[0].strikes == 0, "inbox: strikes are per client")
+	mw = d.open_picture(j2.folder + "/" + j2.answer)
+	mw.set_content_size(Vector2(j2.target.w, j2.target.h))
+	d.snapshot(mw)
+	d.send()
+	check(d.slots[1].finished and d.email._buttons.get_child(1).text.ends_with("OK"), "inbox: finished client marked OK")
+	await create_timer(2.4).timeout
+	check(won.is_empty(), "inbox: group not done while a client waits")
+	d.select_job(0)
+	check(d.job.search_word == "Comets" and not d.finished, "inbox: back to the first client")
+	d.select_job(1)
+	check(d.email.last_reply == j2.replies.right and d.email.body.get_parsed_text().contains(j2.replies.wrong_file), "inbox: each email keeps its replies")
+	var st: Dictionary = d.export_state()
+	d.select_job(0)
+	d.import_state(st)
+	check(d.cur == 1 and d.slots[1].finished and d.slots[1].replies.size() == 2, "inbox: save/restore keeps both clients")
+	d.select_job(0)
+	var bw = d.open_picture(d.job.folder + "/ball_3.png")
+	bw.set_content_size(Vector2(160, 160))
+	d.snapshot(bw)
+	d.send()
+	await create_timer(2.4).timeout
+	check(won.size() == 1, "inbox: group done when every client is happy")
+
+
+func check_replays() -> void:
+	var SaveFile = load("res://scripts/save_file.gd")
+	var m = load("res://scenes/main.tscn").instantiate()
+	root.add_child(m)
+	await process_frame
+	m.records_path = "user://test_records.json"
+	SaveFile.clear(m.records_path)
+	check(m.replays().is_empty(), "replay: jam jobs aren't timed")
+	m.campaign.jobs[0].timed = true
+	check(m.replays().is_empty(), "replay: locked until beaten")
+	m.start_game(false)
+	await process_frame
+	var d = m.current
+	var bw = d.open_picture(d.job.folder + "/ball_3.png")
+	bw.set_content_size(Vector2(160, 160))
+	d.snapshot(bw)
+	d.send()
+	await create_timer(2.4).timeout
+	check(m.replays().size() == 1 and m.replays()[0].best < 0, "replay: unlocked after the campaign win, no best yet")
+	m.show_title()
+	await process_frame
+	var labels: Array = m.current.find_children("*", "Button", true, false).map(func(b): return b.text)
+	check(labels.has("replay: HELP game at 9"), "replay: title offers it " + str(labels))
+	m.start_replay(0)
+	await process_frame
+	d = m.current
+	check(d._clock_label != null and d._clock_label.text == "time 0:00", "replay: clock shows")
+	await create_timer(1.1).timeout
+	check(d._clock_label.text == "time 0:01", "replay: clock counts")
+	bw = d.open_picture(d.job.folder + "/ball_3.png")
+	bw.set_content_size(Vector2(160, 160))
+	d.snapshot(bw)
+	d.send()
+	await create_timer(2.4).timeout
+	var best: float = m.replays()[0].best
+	check(best >= 1.0 and best < 1.8 and m.current.get_script().resource_path.ends_with("title_screen.gd"), "replay: best time saved, back to title (%.1f)" % best)
+	labels = m.current.find_children("*", "Button", true, false).map(func(b): return b.text)
+	check(labels.any(func(t): return t.begins_with("replay: HELP game at 9  best 0:0")), "replay: title shows the best time " + str(labels))
+	SaveFile.clear(m.records_path)
+	m.queue_free()
+
+
 func _initialize() -> void:
 	var c := JobData.load_campaign("res://data/campaign.json")
 	check(c.jobs.size() == 2, "campaign has 2 jobs")
@@ -461,6 +607,7 @@ func _initialize() -> void:
 	check(d2.term.output.get_parsed_text().contains("pixview chart.png"), "desktop: ps lists viewers")
 	check_window_tools(d2, c.jobs[0])
 	await check_runner(d2, c.jobs[0])
+	await check_inbox(d2, c)
 	d2.load_job(late_job(c.jobs[0]))
 	d2.run_command("su marta")
 	check(d2.term.input.secret, "desktop: password input is hidden")
@@ -480,5 +627,7 @@ func _initialize() -> void:
 	check(main.current.job == c.jobs[0] and main.current.pictures.is_empty(), "play again restarts at job 1, clean")
 	var r2: Dictionary = Shell.new(c.jobs[1]).run("grep Gold notes.txt")
 	check(r2.hint == ["(nothing in that file. Coach keeps his own notes.)"], "job 2 overrides the no-match hint")
+	await check_saving(c.jobs[0])
+	await check_replays()
 	print("\n%d failure(s)" % fails)
 	quit(1 if fails else 0)

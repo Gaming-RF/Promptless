@@ -98,6 +98,13 @@ func add_title_button(text: String, on_press: Callable) -> Button:
 	return b
 
 
+func clear_title_buttons() -> void:
+	for b in _buttons.get_children():
+		_buttons.remove_child(b)
+		b.queue_free()
+	_layout()
+
+
 func keep_on_screen() -> void:
 	var area := get_parent_area_size()
 	position.x = clampf(position.x, 24 - size.x, area.x - 24)

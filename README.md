@@ -35,7 +35,12 @@ To swap one, replace the file with the same name and re-import:
 
 ## Controls
 - Drag title bars to move; drag a picture's right/bottom edge or corner to stretch.
-- Click a picture, then arrow keys resize 1px (Shift: 8px).
+- Keyboard only: Esc leaves the terminal for the pictures (and back), Tab picks the next picture,
+  arrows stretch (Shift: 8px), Ctrl+arrows move (joins if it lands next to another), S = SNAP,
+  T = trace, Enter = Send.
+- "text: big" doubles the text in the terminal, mail and text windows.
+- Saving: set `"save": true` in `data/campaign.json` (off for the jam). The title then offers
+  continue / new game.
 - Clicking the red command in the email pastes it into the terminal (job 1 only).
 - Terminal: Tab completes commands and file names; Up/Down recall history.
 - Jobs only need `ls`, `grep`, `open`. Later-chapter commands also work: `cd`, `ls -a`, `ls -l`,
@@ -54,6 +59,8 @@ To swap one, replace the file with the same name and re-import:
   mode) and `"join"` (pictures dragged edge to edge snap together and move as one). A job's
   `"check"` picks the win rule: `stretch` (default), `overlay` (`"overlay": {top, under, align}`)
   or `join` (`"join": {"order": [...]}`).
+- Campaign data: a `jobs` entry can be a list of jobs that run at once (inbox tabs in the mail
+  title). A job with `"timed": true` becomes a replay with a clock + best time once beaten.
 - Job runner data: `"strikes": 3` + reply lists + `"give_up"`; `"shuffle": true` with `{answer_n}`
   in notes/email; `"sticky": {"lines", "paste"}`; `"tools": ["textview"]` opens text files in a window.
 - More job data: `"users"` (password, `sudo`, home), files with `"private": true`, archives

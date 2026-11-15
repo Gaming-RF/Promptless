@@ -1,6 +1,7 @@
 extends Control
 
-signal start
+signal start(resume)
+signal replay(index)
 
 const Palette = preload("res://scripts/palette.gd")
 const UI = preload("res://scripts/ui.gd")
@@ -8,10 +9,14 @@ const JobData = preload("res://scripts/job_data.gd")
 const PictureView = preload("res://scripts/picture_view.gd")
 
 var campaign: Dictionary
+var can_continue := false
+var replay_list: Array = []
 
 
-func setup(c: Dictionary) -> void:
+func setup(c: Dictionary, resume_ok := false, replays: Array = []) -> void:
 	campaign = c
+	can_continue = resume_ok
+	replay_list = replays
 
 
 func _ready() -> void:
@@ -44,9 +49,29 @@ func _ready() -> void:
 		var l := UI.label(spec[0], spec[1], spec[2])
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(l)
+	var first: Button
+	if can_continue:
+		first = _button(box, campaign.get("continue_button", "continue"), true)
+		_button(box, campaign.get("new_game_button", "new game"), false)
+	else:
+		first = _button(box, campaign.get("boot_button", "start"), false)
+	for r in replay_list:
+		var text: String = campaign.get("replay_button", "replay: {subject}").format({"subject": r.subject})
+		if r.best >= 0:
+			text += "  " + campaign.get("best_label", "best {t}").format({"t": "%d:%02d" % [int(r.best) / 60, int(r.best) % 60]})
+		var b := Button.new()
+		b.text = text
+		b.size_flags_horizontal = SIZE_SHRINK_CENTER
+		var idx: int = r.index
+		b.pressed.connect(func(): replay.emit(idx))
+		box.add_child(b)
+	first.grab_focus.call_deferred()
+
+
+func _button(box: Container, text: String, resume: bool) -> Button:
 	var b := Button.new()
-	b.text = campaign.get("boot_button", "start")
+	b.text = text
 	b.size_flags_horizontal = SIZE_SHRINK_CENTER
-	b.pressed.connect(func(): start.emit())
+	b.pressed.connect(func(): start.emit(resume))
 	box.add_child(b)
-	b.grab_focus.call_deferred()
+	return b

@@ -23,3 +23,7 @@ func setup(path: String, lines: Array, open_size: Vector2) -> void:
 	body.offset_left = 2
 	body.offset_right = -2
 	set_content_size(open_size)
+
+
+func set_text_size(px: int) -> void:
+	body.add_theme_font_size_override("normal_font_size", px)

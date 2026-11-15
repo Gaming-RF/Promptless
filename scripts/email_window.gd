@@ -2,6 +2,7 @@ extends "res://scripts/desk_window.gd"
 
 signal command_clicked(cmd)
 signal send_pressed
+signal inbox_selected(index)
 
 var job: Dictionary
 var body := RichTextLabel.new()
@@ -112,3 +113,17 @@ func _format_body() -> String:
 
 static func _esc(t: String) -> String:
 	return t.replace("[", "[lb]")
+
+
+func set_text_size(px: int) -> void:
+	body.add_theme_font_size_override("normal_font_size", px)
+
+
+func set_inbox(names: Array, current: int, done: Array) -> void:
+	clear_title_buttons()
+	if names.size() < 2:
+		return
+	for i in names.size():
+		var t: String = (">" if i == current else "") + String(names[i]) + (" OK" if done[i] else "")
+		var idx := i
+		add_title_button(t, func(): inbox_selected.emit(idx))

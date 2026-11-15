@@ -20,6 +20,10 @@ func _init(j: Dictionary) -> void:
 	_token_re.compile("\"([^\"]*)\"|'([^']*)'|(\\S+)")
 
 
+func add_job(j: Dictionary) -> void:
+	fs.add_job(j)
+
+
 func files() -> Array:
 	return fs.children(cwd)
 
