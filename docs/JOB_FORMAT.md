@@ -9,11 +9,13 @@ file. `campaign.defaults` is merged under every job, so a job states only what i
 | Key | Meaning |
 |---|---|
 | `extends` | Another campaign to inherit from (its `jobs` are not inherited) |
-| `title`, `tagline`, `boot_button`, `continue_button`, `new_game_button` | Title screen |
+| `title`, `tagline`, `boot_button`, `continue_button`, `new_game_button`, `help_button`, `settings_button` | Title screen |
+| `other_campaigns` | `[{label, path}]`: title buttons that switch campaign (remove before a jam upload) |
+| `settings_labels` | Text on the settings page |
 | `jobs` | Job file paths in order. An entry that is a **list** = those jobs run at once (inbox tabs) |
 | `save` | `true` = autosave + continue |
 | `music` | Path of the radio's loop |
-| `end` | `{again, picture_job}`: end-screen button text, which job's answer bounces |
+| `end` | `{again, picture_job, headline, bounced_line}`: end screen; `bounced_line` uses `{name}` for each client who bounced back |
 | `replay_button`, `best_label` | Timed-replay buttons on the title |
 | `defaults` | Merged under every job: `client`, `picture_dir`, `home`, `users`, `replies`, `shell` (all terminal text + man pages), `ui` (all button/label text) |
 
@@ -38,7 +40,7 @@ file. `campaign.defaults` is merged under every job, so a job states only what i
 | `overlay` | `overlay: {top, under, align, either?}` | `top` traced, on top, lined up with `under` within `align` px (`either`: either may be on top) | `right wrong_file wrong_shape` |
 | `join` | `join: {order: [...], by_name?}` | the pages are joined in that order (`by_name`: match file names, not paths) | `right wrong_file wrong_shape` |
 | `ran` | `ran: {path, root?}` | that script runs (as root if `root`) | `right` |
-| `remote` | `remote: {user, folder, texts, pictures, goal: {opened}}` | `write USER ...` makes their machine open `goal.opened` | `right` |
+| `remote` (teach) | `remote: {user, folder, texts, pictures, extra_files, goal, did_it}` | `write USER ...` on their machine meets `goal`: `{opened: file}`, `{ran: script}` or `{printed: text}`; `did_it` = the line they type when they manage | `right` (+ `no_attachment` as a nudge) |
 
 All jobs also use `no_attachment` (from defaults).
 

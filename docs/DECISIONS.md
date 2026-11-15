@@ -1,5 +1,12 @@
 # Toy-phase decisions
 
+## Core concept: help them bounce back
+The jam theme is the game's spine, not decoration. Every client is first **fixed** (you shape their
+file for them) and then **taught**: they come back, you can't touch their files, and you coach their
+own machine with `write NAME COMMAND`. A taught client "bounced back" from losing their AI; the end
+screen lists everyone who did ("THE TOWN IS BOUNCING BACK"). Wrong answers still "bounce back" as
+replies, and the fixed ball bounces. Jam build: job 1 fix Dex's ball, job 2 teach Dex.
+
 Every open question the plan parked "until after the jam", with the answer that is built and
 tested. Each can be changed; the reason is here so the change is deliberate.
 

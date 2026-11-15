@@ -1,0 +1,53 @@
+{
+	"client": {
+		"name": "Tobi",
+		"portrait_calm": "res://assets/tobi_calm.png",
+		"portrait_panic": "res://assets/tobi_panic.png"
+	},
+	"folder": "/clients/tobi/lesson",
+	"email": {
+		"from": "Tobi",
+		"subject": "ok fine (teach me)",
+		"body": "Turns out my fix script is also 'not runnable'. I could work it out. I'd just rather you told me. My machine: write tobi. The script is fix.sh. Don't make it weird.\n\nTobi (senior dev, learning)",
+		"clickable": []
+	},
+	"texts": {
+		"how.txt": [
+			"write tobi COMMAND",
+			"sends one command to their machine.",
+			"they type it exactly. typos too."
+		]
+	},
+	"pictures": [],
+	"check": "remote",
+	"remote": {
+		"user": "tobi",
+		"folder": "/home/tobi",
+		"texts": {},
+		"pictures": [],
+		"extra_files": [
+			{
+				"path": "fix.sh",
+				"type": "script",
+				"x": false,
+				"prints": [
+					"fix.sh: fixed. obviously."
+				]
+			}
+		],
+		"goal": {
+			"ran": "fix.sh"
+		},
+		"did_it": "oh. it ran. I did that. obviously."
+	},
+	"sticky": {
+		"lines": [
+			"write tobi COMMAND"
+		],
+		"paste": false
+	},
+	"replies": {
+		"right": "chmod. Of course. I knew that. Bounce-back rate: 100%. Mine, I mean. Thanks.",
+		"no_attachment": "Don't send me a picture. Send me the commands. I want to do it myself."
+	}
+}

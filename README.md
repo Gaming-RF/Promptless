@@ -1,13 +1,17 @@
 # Promptless: Bounce Back (jam build, Godot 4.7)
 
-Two jobs, ~3 minutes. Job 1: read Dex's email -> `grep Comets notes.txt` -> `open ball_3.png`
--> stretch the window until the ball is round -> SNAP -> Send. Job 2 (the medal) lands on the
-same desktop: same pattern, two text files, eight photos, nothing clickable.
+Help them bounce back. Two jobs, ~3 minutes. Job 1 (fix): read Dex's email -> `grep Comets notes.txt`
+-> `open ball_3.png` -> stretch the window until the ball is round -> SNAP -> Send. Job 2 (teach): Dex
+wants to learn, so you send commands to his own laptop with `write dex ...` until he opens the
+newsletter photo himself. The end screen lists who bounced back.
+Title screen: how to play, settings (music, volumes, big text, fullscreen, reset), and a
+"full game (draft)" button (remove `other_campaigns` from `data/campaign.json` before a jam upload:
+its placeholder art isn't shippable).
 
 - **Run:** `godot --path .` (or F5 in the editor)
 - **Full-game draft:** `godot --path . -- --campaign=res://data/full/campaign.json`
-  (9 jobs: chapter 0 x2, Lake Orrin, Marguerite, the Okafors, Tobi, Ansel, the previous owner
-  with the run/wait choice, and teaching Dex with `write dex ...`;
+  (fix -> teach pairs for Dex, Marguerite, the Okafors and Tobi; Lake Orrin; Ansel + Dex at once;
+  the previous owner with the run/wait choice; Dex's last lesson;
   code-drawn placeholder art until real pictures exist at the same file names; all text is a draft)
 - **Tests:** `godot --headless --path . -s tests/run_tests.gd` (logic + desktop) and
   `godot --headless --path . -s tests/input_test.gd` (real key/mouse events, full 90-second path)

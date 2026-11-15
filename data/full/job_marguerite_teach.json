@@ -1,0 +1,51 @@
+{
+	"client": {
+		"name": "Marguerite",
+		"portrait_calm": "res://assets/marguerite_calm.png",
+		"portrait_panic": "res://assets/marguerite_panic.png"
+	},
+	"folder": "/clients/marguerite/lesson",
+	"email": {
+		"from": "Marguerite",
+		"subject": "fine. teach me.",
+		"body": "Raj says I should learn to do this myself. Insolent. Correct. My machine is on. Send commands with write marguerite. Help me find who else I owe an apology to. It's in my sent mail.\n\n- M.",
+		"clickable": []
+	},
+	"texts": {
+		"how.txt": [
+			"write marguerite COMMAND",
+			"sends one command to their machine.",
+			"they type it exactly. typos too."
+		]
+	},
+	"pictures": [],
+	"check": "remote",
+	"remote": {
+		"user": "marguerite",
+		"folder": "/home/marguerite",
+		"texts": {
+			"sent.txt": [
+				"To: Board - fine.",
+				"To: Raj - sorry about the plant. I killed it. Deliberately.",
+				"To: All staff - well done, I suppose",
+				"To: Legal - no."
+			]
+		},
+		"pictures": [],
+		"extra_files": [],
+		"goal": {
+			"printed": "sorry about the plant"
+		},
+		"did_it": "I found it. Myself. Apparently I can do things."
+	},
+	"sticky": {
+		"lines": [
+			"write marguerite COMMAND"
+		],
+		"paste": false
+	},
+	"replies": {
+		"right": "I apologised to Raj in person. The company is bouncing back. So, it seems, am I.",
+		"no_attachment": "Don't send me a picture. Send me the commands. I want to do it myself."
+	}
+}

@@ -8,7 +8,7 @@
 	"email": {
 		"from": "Ada Okafor",
 		"subject": "our wedding photo",
-		"body": "Our wedding photo is gone. The memory bot kept it, and now the folder looks empty. Our son says old copies hide in folders whose names start with a dot? Everything is in /clients/okafor. It's our anniversary.\n\nAda & Femi",
+		"body": "Our wedding photo is gone. The memory bot kept it, and now the folder looks empty. Our son says old copies hide in folders whose names start with a dot? We've bounced back from worse. Everything is in /clients/okafor.\n\nAda & Femi",
 		"clickable": []
 	},
 	"texts": {},
@@ -78,7 +78,7 @@
 		"paste": false
 	},
 	"replies": {
-		"right": "Both of us, together again. Femi is crying. I am not crying. Thank you, dear.",
+		"right": "Both of us, together again. We always bounce back, Femi says. Thank you, dear.",
 		"wrong_file": [
 			"That's only half of us.",
 			"Still half."

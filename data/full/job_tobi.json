@@ -8,7 +8,7 @@
 	"email": {
 		"from": "Tobi",
 		"subject": "quick favour (urgent)",
-		"body": "My chart script won't start. Probably your machine. It's chart.sh in /clients/tobi. I'd fix it myself but my assistant did the fixing. Just run it and send me the chart. Square grid. Obviously.\n\nTobi (senior dev)",
+		"body": "My bounce-back rate chart won't start. Probably your machine. It's chart.sh in /clients/tobi. I'd fix it myself but my assistant did the fixing. Just run it and send me the chart. Square grid. Obviously.\n\nTobi (senior dev)",
 		"clickable": []
 	},
 	"texts": {},
@@ -67,7 +67,7 @@
 		"paste": false
 	},
 	"replies": {
-		"right": "Looks right. I mean it was always going to work. Thanks, I guess.",
+		"right": "Bounce-back rate: up. I mean it was always going to work. Thanks, I guess.",
 		"crowded": [
 			"Why are there four charts. Close the extras.",
 			"Still more than one chart. Is something making them?"

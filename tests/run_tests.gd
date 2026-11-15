@@ -5,6 +5,7 @@ const Shell = preload("res://scripts/shell.gd")
 const Judge = preload("res://scripts/judge.gd")
 
 var fails := 0
+var medal: Dictionary
 
 
 func check(cond: bool, msg: String) -> void:
@@ -385,7 +386,7 @@ func check_saving(base: Dictionary) -> void:
 	m.show_title()
 	await process_frame
 	var labels: Array = m.current.find_children("*", "Button", true, false).map(func(b): return b.text)
-	check(m.current.can_continue and labels == ["continue", "new game"], "save: title offers continue + new game " + str(labels))
+	check(m.current.can_continue and labels.slice(0, 4) == ["continue", "new game", "how to play", "settings"], "save: title offers continue + new game " + str(labels))
 	m.start_game(true)
 	await process_frame
 	d = m.current
@@ -404,12 +405,8 @@ func check_saving(base: Dictionary) -> void:
 	check(m.job_index == 1 and SaveFile.read(m.save_path).job_index == 1, "save: progress saved after a win")
 	m.start_game(true)
 	await process_frame
-	check(m.current.job.search_word == "Gold", "save: continue lands on job 2")
-	var j2: Dictionary = m.current.job
-	var mw = m.current.open_picture(j2.folder + "/" + j2.answer)
-	mw.set_content_size(Vector2(j2.target.w, j2.target.h))
-	m.current.snapshot(mw)
-	m.current.send()
+	check(m.current.job.get("check", "") == "remote", "save: continue lands on job 2 (teach Dex)")
+	m.current.run_command("write dex open photo_4.png")
 	await create_timer(2.4).timeout
 	check(not m.can_continue(), "save: cleared when the campaign ends")
 	m.start_game(false)
@@ -428,7 +425,7 @@ func check_saving(base: Dictionary) -> void:
 func check_inbox(d, c: Dictionary) -> void:
 	var won := []
 	d.job_won.connect(func(r): won.append(r))
-	d.load_jobs([c.jobs[0], c.jobs[1]])
+	d.load_jobs([c.jobs[0], medal])
 	var tabs: Array = d.email._buttons.get_children().map(func(b): return b.text)
 	check(tabs == [">Dex", "Dex"], "inbox: one tab per client " + str(tabs))
 	check(d.shell.fs.exists("/clients/dex/notes.txt") and d.shell.fs.exists("/clients/dex/newsletter/coach.txt"), "inbox: both folders exist")
@@ -509,16 +506,126 @@ func say(m, cmd: String) -> void:
 	m.current.run_command(cmd)
 
 
-func win_wait(m, idx: int) -> void:
-	await create_timer(2.4).timeout
-	check(m.job_index == idx + 1 or m.current.get_script().resource_path.ends_with("end_screen.gd"), "full: job %d won and the next one loaded" % (idx + 1))
+func solve(m, d, job: Dictionary) -> void:
+	var subj: String = job.email.subject
+	match subj:
+		"is this the computer place??":
+			say(m, "open id_photo.png")
+			d.snapshot(d.picture("id_photo.png"))
+			d.send()
+		"HELP game at 9":
+			var w = d.open_picture(job.folder + "/ball_3.png")
+			w.set_content_size(Vector2(160, 160))
+			d.snapshot(w)
+			d.send()
+		"my turn??":
+			say(m, "write dex grep Newsletter notes.txt")
+			say(m, "write dex open photo_4.png")
+		"HELP due 9am":
+			say(m, "grep Orrin notes.txt")
+			var n := String(job.answer).get_basename().get_slice("_", 1).to_int()
+			check(d.term.output.get_parsed_text().contains("Lake Orrin = map %d." % n), "lake: grep names the map")
+			var mw = d.open_picture(job.folder + "/" + job.answer)
+			mw.set_content_size(Vector2(160, 160))
+			d.snapshot(mw)
+			d.send()
+		"apology. urgent.":
+			say(m, "grep Priyanka sent_mail.txt")
+			var memo = d.open_picture("/clients/marguerite/memo.png")
+			var note = d.open_picture("/clients/marguerite/note.png")
+			note.position = memo.position
+			note.set_tracing(true)
+			d.snapshot(note)
+			d.send()
+		"fine. teach me.":
+			say(m, "write marguerite grep sorry sent.txt")
+		"our wedding photo":
+			say(m, "cd /clients/okafor")
+			check(d.shell.run("ls").out.is_empty() and d.shell.run("ls -a").out[0].contains(".album"), "okafor: folder looks empty until ls -a")
+			say(m, "cd .album")
+			say(m, "open faded_1.png")
+			say(m, "open faded_2.png")
+			var f1 = d.picture("faded_1.png")
+			var f2 = d.picture("faded_2.png")
+			f1.position = f2.position
+			f1.set_tracing(true)
+			f1.move_to_front()
+			d.snapshot(f1)
+			d.send()
+		"can you teach us?":
+			say(m, "write ada ls -a")
+			say(m, "write ada cd .backup")
+			say(m, "write ada open honeymoon.png")
+		"quick favour (urgent)":
+			say(m, "cd /clients/tobi")
+			say(m, "chmod +x chart.sh")
+			check(d.term.output.get_parsed_text().contains("Operation not permitted"), "tobi: can't chmod his file")
+			say(m, "cp chart.sh ~")
+			say(m, "cd ~")
+			say(m, "chmod +x chart.sh")
+			say(m, "./chart.sh")
+			await process_frame
+			check(d.pictures.size() == 4, "tobi: the script floods 4 windows")
+			var charts: Array = d.pictures.values()
+			charts[0].set_content_size(Vector2(160, 160))
+			d.snapshot(charts[0])
+			d.send()
+			check(d.email.last_reply.begins_with("Why are there four"), "tobi: crowded until the copies are gone")
+			say(m, "kill %d" % charts[1].pid)
+			await process_frame
+			check(d.pictures.size() == 4, "tobi: killing a copy respawns it")
+			var parent: Dictionary = d.running_programs().filter(func(p): return p.cmd == "chart.sh")[0]
+			say(m, "kill %d" % parent.pid)
+			charts = d.pictures.values()
+			for i in range(1, charts.size()):
+				say(m, "kill %d" % charts[i].pid)
+			await process_frame
+			charts = d.pictures.values()
+			charts[0].set_content_size(Vector2(160, 160))
+			d.snapshot(charts[0])
+			d.send()
+		"ok fine (teach me)":
+			say(m, "write tobi ./fix.sh")
+			check(not d.finished and d.remote_screen.body.get_parsed_text().contains("Permission denied"), "tobi teach: his script isn't runnable yet")
+			say(m, "write tobi chmod +x fix.sh")
+			say(m, "write tobi ./fix.sh")
+		"Check my working":
+			say(m, "cat ~/mail/ansel_1.txt")
+			say(m, "unzip ledger.zip -d ~")
+			say(m, "1971")
+			check(d.shell.run("sort -n ~/ledger/index.txt").out[0] == "1 scan_b.png", "ansel: sort -n gives the page order")
+			var pages: Array = []
+			for nm in ["scan_b", "scan_d", "scan_c", "scan_a"]:
+				pages.append(d.open_picture("/home/you/ledger/%s.png" % nm))
+			pages[0].position = Vector2(330, 120)
+			for i in range(1, 4):
+				pages[i].position = pages[i - 1].position + Vector2(pages[i - 1].size.x + 3, 0)
+				d._on_drag_finished(pages[i])
+			d.snapshot(pages[0])
+			d.send()
+		"quiz tomorrow!!":
+			say(m, "write dex grep Deepest geo.txt")
+		"about your machine":
+			say(m, "su owner")
+			say(m, "harbor1984")
+			say(m, "./end_drill.sh")
+			check(not d.finished, "owner: needs root")
+			say(m, "sudo /home/owner/end_drill.sh")
+			say(m, "harbor1984")
+		"last lesson??":
+			say(m, "write dex gerp club notes.txt")
+			check(d.remote_screen.body.get_parsed_text().contains("did you mean grep"), "final: his machine runs typos exactly")
+			say(m, "write dex grep club notes.txt")
+			say(m, "write dex open flyer_3.png")
+	check(d.finished, "full: '%s' finished (reply: %s)" % [subj, d.email.last_reply])
 
 
 func check_full_campaign() -> void:
 	var fc := JobData.load_campaign("res://data/full/campaign.json")
-	check(fc.jobs.size() == 9 and fc.title == "Promptless" and fc.defaults.shell.has("man"), "full: campaign extends the jam defaults")
-	for j in fc.jobs:
-		check_job_data(j)
+	check(fc.jobs.size() == 13 and fc.title == "Promptless" and fc.defaults.shell.has("man"), "full: campaign extends the jam defaults")
+	for e in fc.jobs:
+		for j in (e if e is Array else [e]):
+			check_job_data(j)
 	var m = load("res://scenes/main.tscn").instantiate()
 	root.add_child(m)
 	await process_frame
@@ -526,152 +633,98 @@ func check_full_campaign() -> void:
 	m.campaign.save = false
 	m.start_game(false)
 	await process_frame
-	var d = m.current
-	check(d.email.body.text.contains("[url=0]"), "boot: chapter 0 email has clickable commands")
-	say(m, "ls")
-	say(m, "open id_photo.png")
-	d.snapshot(d.picture("id_photo.png"))
-	d.send()
-	check(d.email.last_reply.begins_with("bus pass WORKS"), "boot 1: open + SNAP wins")
-	await win_wait(m, 0)
-	d = m.current
-	say(m, "open flyer_final.png")
-	d.snapshot(d.picture("flyer_final.png"))
-	d.send()
-	check(d.email.last_reply == "no the FINAL final one", "boot 2: wrong flyer")
-	say(m, "open flyer_final_FINAL.png")
-	d.snapshot(d.picture("flyer_final_FINAL.png"))
-	d.send()
-	await win_wait(m, 1)
-	d = m.current
-	var lake: Dictionary = d.job
-	say(m, "grep Orrin notes.txt")
-	var n := String(lake.answer).get_basename().get_slice("_", 1).to_int()
-	check(d.term.output.get_parsed_text().contains("Lake Orrin = map %d." % n), "lake: grep names the map")
-	var mw = d.open_picture(lake.folder + "/" + lake.answer)
-	mw.set_content_size(Vector2(160, 160))
-	d.snapshot(mw)
-	d.send()
-	await win_wait(m, 2)
-
-	d = m.current
-	say(m, "grep Priyanka sent_mail.txt")
-	var memo = d.open_picture("/clients/marguerite/memo.png")
-	var note = d.open_picture("/clients/marguerite/note.png")
-	note.position = memo.position
-	note.set_tracing(true)
-	d.snapshot(note)
-	d.send()
-	check(d.email.last_reply.begins_with("Forwarded"), "marguerite: traced note over memo wins")
-	await win_wait(m, 3)
-
-	d = m.current
-	say(m, "cd /clients/okafor")
-	check(d.shell.run("ls").out.is_empty() and d.shell.run("ls -a").out[0].contains(".album"), "okafor: folder looks empty until ls -a")
-	say(m, "cd .album")
-	say(m, "open faded_1.png")
-	say(m, "open faded_2.png")
-	var f1 = d.picture("faded_1.png")
-	var f2 = d.picture("faded_2.png")
-	f1.position = f2.position
-	f1.set_tracing(true)
-	f1.move_to_front()
-	d.snapshot(f1)
-	d.send()
-	check(d.email.last_reply.begins_with("Both of us"), "okafor: either copy on top works")
-	await win_wait(m, 4)
-
-	d = m.current
-	say(m, "chmod +x chart.sh")
-	check(d.term.output.get_parsed_text().contains("Operation not permitted"), "tobi: can't chmod his file")
-	say(m, "cp chart.sh ~")
-	say(m, "cd ~")
-	say(m, "./chart.sh")
-	check(d.pictures.is_empty(), "tobi: copy isn't runnable yet")
-	say(m, "chmod +x chart.sh")
-	say(m, "./chart.sh")
-	await process_frame
-	check(d.pictures.size() == 4 and d.shell.fs.exists("/home/you/chart.png"), "tobi: script makes the chart and floods 4 windows")
-	var charts: Array = d.pictures.values()
-	charts[0].set_content_size(Vector2(160, 160))
-	d.snapshot(charts[0])
-	d.send()
-	check(d.email.last_reply.begins_with("Why are there four"), "tobi: crowded until the copies are killed")
-	say(m, "kill %d" % charts[1].pid)
-	await process_frame
-	check(d.pictures.size() == 4 and d.term.output.get_parsed_text().contains("drawing another"), "tobi: killing a copy just respawns it")
-	var parent: Dictionary = d.running_programs().filter(func(p): return p.cmd == "chart.sh")[0]
-	check(parent.pid > 0 and d.pictures.values().all(func(w): return w.pid != parent.pid), "tobi: ps shows the windowless parent")
-	say(m, "kill %d" % parent.pid)
-	charts = d.pictures.values()
-	for i in range(1, charts.size()):
-		say(m, "kill %d" % charts[i].pid)
-	await process_frame
-	check(d.pictures.size() == 1, "tobi: with the parent gone, copies stay dead")
-	charts = d.pictures.values()
-	charts[0].set_content_size(Vector2(160, 160))
-	d.snapshot(charts[0])
-	d.send()
-	check(d.email.last_reply.begins_with("Looks right"), "tobi: one square chart wins")
-	await win_wait(m, 5)
-
-	d = m.current
-	say(m, "cat ~/mail/ansel_1.txt")
-	say(m, "unzip ledger.zip -d ~")
-	say(m, "1971")
-	check(d.shell.fs.exists("/home/you/ledger/scan_a.png"), "ansel: unzip with the password from his letter")
-	check(d.shell.run("sort -n ~/ledger/index.txt").out[0] == "1 scan_b.png", "ansel: sort -n gives the page order")
-	var pages: Array = []
-	for name in ["scan_b", "scan_d", "scan_c", "scan_a"]:
-		pages.append(d.open_picture("/home/you/ledger/%s.png" % name))
-	pages[0].position = Vector2(330, 120)
-	for i in range(1, 4):
-		pages[i].position = pages[i - 1].position + Vector2(pages[i - 1].size.x + 3, 0)
-		d._on_drag_finished(pages[i])
-	d.snapshot(pages[0])
-	d.send()
-	check(d.email.last_reply.begins_with("Splendid"), "ansel: pages joined in order win")
-	await win_wait(m, 6)
-
-	d = m.current
-	say(m, "cat notes.txt")
-	say(m, "su owner")
-	say(m, "harbor1984")
-	check(d.shell.fs.user == "owner", "owner: su with the pieced-together password")
-	say(m, "./end_drill.sh")
-	check(d.term.output.get_parsed_text().contains("run it as root") and not d.finished, "owner: needs root")
-	say(m, "sudo /home/owner/end_drill.sh")
-	say(m, "harbor1984")
-	check(d.finished and d.email.last_reply.begins_with("So it's done") and d.ending == "run", "owner: sudo her command ends the drill")
-	await win_wait(m, 7)
-	d = m.current
-	check(d.remote_screen != null and d.remote_screen._title_label.text.ends_with("dex's screen"), "final: dex's screen window")
-	say(m, "write dex ls")
-	check(d.remote_screen.body.get_parsed_text().contains("flyer_1.png  flyer_2.png  flyer_3.png  flyer_4.png  notes.txt") and not d.remote_screen.body.get_parsed_text().contains("how.txt"), "final: his machine has only his files")
-	say(m, "write sam ls")
-	check(d.term.output.get_parsed_text().contains("sam is not logged in"), "final: write to someone else")
-	say(m, "write dex gerp flyer notes.txt")
-	check(d.remote_screen.body.get_parsed_text().contains("did you mean grep"), "final: his machine runs typos exactly")
-	say(m, "write dex grep club notes.txt")
-	check(d.remote_screen.body.get_parsed_text().contains("club flyer = flyer 3"), "final: grep runs on his machine")
-	say(m, "write dex open flyer_1.png")
-	check(not d.finished, "final: wrong flyer doesn't end it")
-	say(m, "write dex open flyer_3.png")
-	check(d.finished and d.email.last_reply.begins_with("IT OPENED"), "final: dex opens the right flyer")
-	await win_wait(m, 8)
+	for idx in fc.jobs.size():
+		var d = m.current
+		check(m.job_index == idx, "full: on job %d" % (idx + 1))
+		for i in d.slots.size():
+			d.select_job(i)
+			await solve(m, d, d.job)
+		await create_timer(2.4).timeout
 	check(m.current.get_script().resource_path.ends_with("end_screen.gd"), "full: campaign reaches the end screen")
 	check(m.endings == ["run"], "full: ending recorded")
+	var end_text: Array = m.current.find_children("*", "Label", true, false).map(func(l): return l.text)
+	for who in ["Dex", "Marguerite", "Ada Okafor", "Tobi"]:
+		check(end_text.has("%s bounced back." % who), "full: %s bounced back on the end screen" % who)
 	m.campaign = fc
 	m.start_game(false)
 	await process_frame
-	m.current.load_job(fc.jobs[7])
+	m.current.load_job(fc.jobs[11])
 	m.current.send()
 	check(m.current.ending == "wait" and m.current.email.last_reply.begins_with("Then we wait"), "owner: an empty reply chooses to wait")
 	m.queue_free()
 
 
+func btn(screen: Node, prefix: String) -> Button:
+	for b in screen.find_children("*", "Button", true, false):
+		if not b.is_queued_for_deletion() and b.text.begins_with(prefix):
+			return b
+	return null
+
+
+func check_help_and_settings() -> void:
+	var SaveFile = load("res://scripts/save_file.gd")
+	var m = load("res://scenes/main.tscn").instantiate()
+	root.add_child(m)
+	await process_frame
+	m.show_help()
+	await process_frame
+	var txt: String = m.current.find_children("*", "RichTextLabel", true, false)[0].text
+	check(txt.begins_with("HOW TO PLAY") and txt.contains("write NAME"), "help: page shows the help text")
+	m.current.back.emit()
+	await process_frame
+	check(m.current.get_script().resource_path.ends_with("title_screen.gd"), "help: back to title")
+	m.start_game(false)
+	await process_frame
+	var d = m.current
+	d.open_help()
+	check(d.help_window != null and d.help_window.body.get_parsed_text().contains("HOW TO PLAY"), "help: HELP window opens on the desktop")
+	d.help_window._buttons.get_child(0).pressed.emit()
+	await process_frame
+	check(d.help_window == null, "help: CLOSE closes it")
+	m.sfx.settings = {"music": true, "music_vol": 7, "sfx_vol": 8, "big_text": false, "fullscreen": false}
+	m.sfx.set_music(true)
+	m.sfx.save_settings()
+	m.show_settings()
+	await process_frame
+	var st = m.current
+	btn(st, "big text").pressed.emit()
+	await process_frame
+	check(m.sfx.settings.big_text == true, "settings: big text toggles")
+	btn(st, "music:").pressed.emit()
+	await process_frame
+	check(not m.sfx.music_on, "settings: music off")
+	btn(st, "-").pressed.emit()
+	await process_frame
+	check(int(m.sfx.settings.music_vol) == 6 and m.sfx.music.volume_db < -10.0, "settings: music volume down")
+	var saved = JSON.parse_string(FileAccess.get_file_as_string(m.sfx.settings_path))
+	check(saved.big_text == true and saved.music == false and int(saved.music_vol) == 6, "settings: saved to disk")
+	var m2 = load("res://scenes/main.tscn").instantiate()
+	root.add_child(m2)
+	await process_frame
+	check(m2.sfx.settings.big_text and not m2.sfx.music_on, "settings: loaded on next start")
+	m2.start_game(false)
+	await process_frame
+	check(m2.current.big_text, "settings: big text applies to a new game")
+	m2.queue_free()
+	SaveFile.write({"job_index": 0, "desk": {}}, m.save_path)
+	btn(st, "reset progress").pressed.emit()
+	await process_frame
+	check(FileAccess.file_exists(m.save_path), "settings: reset asks first")
+	btn(st, "click again").pressed.emit()
+	await process_frame
+	check(not FileAccess.file_exists(m.save_path), "settings: second click erases progress")
+	m.sfx.settings = {"music": true, "music_vol": 7, "sfx_vol": 8, "big_text": false, "fullscreen": false}
+	m.sfx.music_on = true
+	m.sfx.save_settings()
+	m.queue_free()
+
+
 func _initialize() -> void:
+	load("res://scripts/sfx.gd").default_settings_path = "user://test_settings.json"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_settings.json"))
 	var c := JobData.load_campaign("res://data/campaign.json")
+	medal = JobData._load_job(c, "res://data/job_medal.json")
+	check_job_data(medal)
 	check(c.jobs.size() == 2, "campaign has 2 jobs")
 	for j in c.jobs:
 		check_job_data(j)
@@ -738,7 +791,7 @@ func _initialize() -> void:
 	check_file_system(job)
 	check_permissions(job)
 	check_late_commands(job)
-	var sh2 = Shell.new(c.jobs[1])
+	var sh2 = Shell.new(medal)
 	r = sh2.run("grep Gold notes.txt")
 	check(r.out.is_empty(), "job 2: notes.txt only has lowercase gold")
 	r = sh2.run("grep Gold coach.txt notes.txt")
@@ -785,15 +838,20 @@ func _initialize() -> void:
 	desk.run_command("open ~/snapshot_3.png")
 	check(desk.picture("snapshot_3.png") != null and desk.picture("snapshot_3.png").get_content_size() == Vector2(160, 160), "a snapshot opens at the size it was taken")
 	var job2: Dictionary = c.jobs[1]
-	desk.run_command("open " + job2.answer)
-	await process_frame
-	var wa = desk.picture(job2.answer)
-	wa.set_content_size(Vector2(job2.target.w, job2.target.h))
-	desk.snapshot(wa)
+	check(desk.remote_screen != null and desk.email.body.text.contains("[url=0]"), "teach: Dex's screen + clickable write command")
 	desk.send()
-	check(desk.email.last_reply == job2.replies.right, "job 2 won")
+	check(desk.email.last_reply == job2.replies.no_attachment and not desk.finished, "teach: sending a picture isn't teaching")
+	desk.run_command("write dex grep Newsletter notes.txt")
+	check(desk.remote_screen.body.get_parsed_text().contains("photo 4") and not desk.finished, "teach: Dex greps his own notes")
+	desk.run_command("write dex open photo_2.png")
+	check(not desk.finished, "teach: wrong photo doesn't count")
+	desk.run_command("write dex open photo_4.png")
+	check(desk.finished and desk.email.last_reply == job2.replies.right and desk.remote_screen.body.get_parsed_text().contains("I DID THAT"), "teach: Dex opens it himself, job 2 won")
+	check(desk.bounced == ["Dex"], "teach: Dex counted as bounced back")
 	await create_timer(2.6).timeout
 	check(main.current.get_script().resource_path.ends_with("end_screen.gd"), "end screen after last job")
+	var end_text: Array = main.current.find_children("*", "Label", true, false).map(func(l): return l.text)
+	check(end_text.has("THE TOWN IS BOUNCING BACK") and end_text.has("Dex bounced back."), "end screen: who bounced back " + str(end_text))
 	var tobi := tobi_job(c.jobs[0])
 	var d2 = main.current
 	main.start_game()
@@ -836,10 +894,11 @@ func _initialize() -> void:
 	main.current.again.emit()
 	await process_frame
 	check(main.current.job == c.jobs[0] and main.current.pictures.is_empty(), "play again restarts at job 1, clean")
-	var r2: Dictionary = Shell.new(c.jobs[1]).run("grep Gold notes.txt")
+	var r2: Dictionary = Shell.new(medal).run("grep Gold notes.txt")
 	check(r2.hint == ["(nothing in that file. Coach keeps his own notes.)"], "job 2 overrides the no-match hint")
 	await check_saving(c.jobs[0])
 	await check_replays()
 	await check_full_campaign()
+	await check_help_and_settings()
 	print("\n%d failure(s)" % fails)
 	quit(1 if fails else 0)

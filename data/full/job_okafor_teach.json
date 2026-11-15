@@ -1,0 +1,68 @@
+{
+	"client": {
+		"name": "Ada Okafor",
+		"portrait_calm": "res://assets/okafor_calm.png",
+		"portrait_panic": "res://assets/okafor_panic.png"
+	},
+	"folder": "/clients/okafor/lesson",
+	"email": {
+		"from": "Ada Okafor",
+		"subject": "can you teach us?",
+		"body": "Femi wants to learn so we never lose a photo again. Our machine is logged in. Send us commands with write ada and we'll type them. There's a backup of the honeymoon photo hiding somewhere.\n\nAda & Femi",
+		"clickable": []
+	},
+	"texts": {
+		"how.txt": [
+			"write ada COMMAND",
+			"sends one command to their machine.",
+			"they type it exactly. typos too."
+		]
+	},
+	"pictures": [],
+	"check": "remote",
+	"remote": {
+		"user": "ada",
+		"folder": "/home/ada",
+		"texts": {},
+		"pictures": [],
+		"extra_files": [
+			{
+				"path": ".backup",
+				"type": "dir"
+			},
+			{
+				"path": ".backup/honeymoon.png",
+				"type": "picture",
+				"open_size": [
+					120,
+					90
+				],
+				"placeholder": {
+					"kind": "half",
+					"side": "left"
+				}
+			},
+			{
+				"path": ".backup/receipt.txt",
+				"type": "text",
+				"lines": [
+					"camera, 1985"
+				]
+			}
+		],
+		"goal": {
+			"opened": ".backup/honeymoon.png"
+		},
+		"did_it": "We found it! Femi did the typing. I did the cheering."
+	},
+	"sticky": {
+		"lines": [
+			"write ada COMMAND"
+		],
+		"paste": false
+	},
+	"replies": {
+		"right": "We found the honeymoon photo ourselves. Forty years, two outages. We always bounce back.",
+		"no_attachment": "Don't send me a picture. Send me the commands. I want to do it myself."
+	}
+}

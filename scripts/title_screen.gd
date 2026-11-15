@@ -2,6 +2,9 @@ extends Control
 
 signal start(resume)
 signal replay(index)
+signal help
+signal settings
+signal other_campaign(path)
 
 const Palette = preload("res://scripts/palette.gd")
 const UI = preload("res://scripts/ui.gd")
@@ -55,6 +58,23 @@ func _ready() -> void:
 		_button(box, campaign.get("new_game_button", "new game"), false)
 	else:
 		first = _button(box, campaign.get("boot_button", "start"), false)
+	var hb := Button.new()
+	hb.text = campaign.get("help_button", "how to play")
+	hb.size_flags_horizontal = SIZE_SHRINK_CENTER
+	hb.pressed.connect(func(): help.emit())
+	box.add_child(hb)
+	var sb := Button.new()
+	sb.text = campaign.get("settings_button", "settings")
+	sb.size_flags_horizontal = SIZE_SHRINK_CENTER
+	sb.pressed.connect(func(): settings.emit())
+	box.add_child(sb)
+	for oc in campaign.get("other_campaigns", []):
+		var ob := Button.new()
+		ob.text = oc.label
+		ob.size_flags_horizontal = SIZE_SHRINK_CENTER
+		var path: String = oc.path
+		ob.pressed.connect(func(): other_campaign.emit(path))
+		box.add_child(ob)
 	for r in replay_list:
 		var text: String = campaign.get("replay_button", "replay: {subject}").format({"subject": r.subject})
 		if r.best >= 0:

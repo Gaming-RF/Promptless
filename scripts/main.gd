@@ -9,6 +9,8 @@ const Desktop = preload("res://scripts/desktop.gd")
 const TitleScreen = preload("res://scripts/title_screen.gd")
 const EndScreen = preload("res://scripts/end_screen.gd")
 const SaveFile = preload("res://scripts/save_file.gd")
+const HelpScreen = preload("res://scripts/help_screen.gd")
+const SettingsScreen = preload("res://scripts/settings_screen.gd")
 
 var campaign: Dictionary
 var job_index := 0
@@ -29,6 +31,7 @@ func _ready() -> void:
 	campaign = JobData.load_campaign(campaign_path)
 	sfx = Sfx.new()
 	add_child(sfx)
+	sfx.load_settings()
 	_save_timer.wait_time = 2.0
 	_save_timer.timeout.connect(save_now)
 	add_child(_save_timer)
@@ -63,7 +66,33 @@ func show_title() -> void:
 	t.setup(campaign, can_continue(), replays())
 	t.start.connect(start_game)
 	t.replay.connect(start_replay)
+	t.help.connect(show_help)
+	t.other_campaign.connect(switch_campaign)
+	t.settings.connect(show_settings)
 	_swap(t)
+
+
+func show_help() -> void:
+	var h = HelpScreen.new()
+	h.setup(campaign.defaults.ui.get("help_page", []), campaign.get("help_back", "back"))
+	h.back.connect(show_title)
+	_swap(h)
+
+
+func switch_campaign(path: String) -> void:
+	campaign_path = path
+	campaign = JobData.load_campaign(path)
+	show_title()
+
+
+func show_settings() -> void:
+	var st = SettingsScreen.new()
+	st.setup(campaign.get("settings_labels", {}), sfx)
+	st.reset_progress.connect(func():
+		SaveFile.clear(save_path)
+		SaveFile.clear(records_path))
+	st.back.connect(show_title)
+	_swap(st)
 
 
 func records() -> Dictionary:
@@ -153,6 +182,7 @@ func _on_job_won(reply: String) -> void:
 
 func show_end(reply: String) -> void:
 	var e = EndScreen.new()
-	e.setup(campaign, reply)
+	var who: Array = current.bounced.duplicate() if current and "bounced" in current else []
+	e.setup(campaign, reply, who)
 	e.again.connect(func(): start_game(false))
 	_swap(e)

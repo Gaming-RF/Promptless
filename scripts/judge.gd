@@ -21,7 +21,7 @@ static func verdict(record, job: Dictionary) -> String:
 	if record == null or record.get("windows", []).is_empty():
 		return "no_attachment"
 	match job.get("check", "stretch"):
-		"ran":
+		"ran", "remote":
 			return "no_attachment"
 		"overlay":
 			return _overlay(record, job)
@@ -84,8 +84,16 @@ static func ran_ok(job: Dictionary, ran: Dictionary) -> bool:
 	return ran.user == "root" or not want.get("root", false)
 
 
-static func remote_ok(job: Dictionary, opened: String) -> bool:
-	if job.get("check", "") != "remote" or opened == "":
+static func remote_ok(job: Dictionary, rr: Dictionary) -> bool:
+	if job.get("check", "") != "remote":
 		return false
 	var r: Dictionary = job.remote
-	return opened == String(r.folder) + "/" + String(r.goal.opened)
+	var g: Dictionary = r.goal
+	var base := String(r.folder) + "/"
+	if g.has("opened"):
+		return rr.get("open", "") == base + String(g.opened)
+	if g.has("ran"):
+		return rr.get("ran", {}).get("path", "") == base + String(g.ran)
+	if g.has("printed"):
+		return rr.get("out", []).any(func(l): return String(l).contains(String(g.printed)))
+	return false

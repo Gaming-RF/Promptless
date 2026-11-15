@@ -1,17 +1,25 @@
 {
 	"extends": "res://data/campaign.json",
 	"title": "Promptless",
-	"tagline": "Every AI went dark. Your old computer didn't. (full game draft)",
+	"tagline": "Everyone's AI went dark. Help them bounce back. (full game draft)",
 	"save": true,
 	"jobs": [
 		"res://data/full/job_boot_1.json",
-		"res://data/full/job_boot_2.json",
+		"res://data/job_bounce_back.json",
+		"res://data/job_dex_teach.json",
 		"res://data/full/job_lake.json",
 		"res://data/full/job_marguerite.json",
+		"res://data/full/job_marguerite_teach.json",
 		"res://data/full/job_okafor.json",
+		"res://data/full/job_okafor_teach.json",
 		"res://data/full/job_tobi.json",
-		"res://data/full/job_ansel.json",
+		"res://data/full/job_tobi_teach.json",
+		[
+			"res://data/full/job_ansel.json",
+			"res://data/full/job_dex_lake_teach.json"
+		],
 		"res://data/full/job_owner.json",
 		"res://data/full/job_dex_final.json"
-	]
+	],
+	"other_campaigns": []
 }

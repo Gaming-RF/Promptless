@@ -29,6 +29,7 @@ var daemons := {}
 var remote_shell
 var remote_screen
 var ending := ""
+var bounced: Array = []
 var attachment = null
 var snap_count := 0
 var finished: bool:

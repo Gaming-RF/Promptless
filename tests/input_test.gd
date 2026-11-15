@@ -66,6 +66,8 @@ func term_text(desk) -> String:
 
 
 func _initialize() -> void:
+	load("res://scripts/sfx.gd").default_settings_path = "user://test_settings_input.json"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_settings_input.json"))
 	main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	await frames(4)
@@ -133,9 +135,9 @@ func _initialize() -> void:
 	await click(send.get_global_rect().get_center())
 	check(desk.finished, "Send button delivers the win: " + desk.email.last_reply)
 	await create_timer(2.6).timeout
-	check(desk.job.search_word == "Gold" and desk.term.input.has_focus(), "job 2 arrives, terminal still focused")
+	check(desk.job.get("check", "") == "remote" and desk.term.input.has_focus(), "job 2 (teach Dex) arrives, terminal still focused")
 	var JobData = load("res://scripts/job_data.gd")
-	var jj = JobData.merge(desk.job, {"tools": ["join", "trace"], "check": "join", "join": {"order": ["p1.png", "p2.png"]},
+	var jj = JobData.merge(main.campaign.jobs[0], {"tools": ["join", "trace"], "check": "join", "join": {"order": ["p1.png", "p2.png"]},
 		"extra_files": [{"path": "p1.png", "type": "picture", "open_size": [80, 100], "asset": "res://assets/ball_1.png"},
 			{"path": "p2.png", "type": "picture", "open_size": [80, 100], "asset": "res://assets/ball_2.png"}]})
 	desk.load_job(jj)
@@ -164,7 +166,7 @@ func _initialize() -> void:
 	var tb: Control = p1._trace_btn
 	await click(tb.get_global_rect().get_center())
 	check(p1.tracing and tb.text == "TRACING", "TRACE button toggles tracing")
-	desk.load_job(JobData.merge(desk.job, {"tools": ["join", "trace"], "check": "join", "join": {"order": ["p1.png", "p2.png"]}}))
+	desk.load_job(JobData.merge(jj, {"tools": ["join", "trace"], "check": "join", "join": {"order": ["p1.png", "p2.png"]}}))
 	await frames(2)
 	p1 = desk.open_picture(jj.folder + "/p1.png")
 	p2 = desk.open_picture(jj.folder + "/p2.png")
@@ -192,7 +194,7 @@ func _initialize() -> void:
 	check(desk.email.last_reply != reply_before, "keys: Enter sends")
 	await key(KEY_ESCAPE)
 	check(desk.term.input.has_focus(), "keys: Escape returns to the terminal")
-	desk.load_job(JobData.merge(desk.job, {"tools": []}))
+	desk.load_job(JobData.merge(main.campaign.jobs[0], {"tools": []}))
 	await frames(2)
 	var rw = desk.open_picture(desk.job.folder + "/" + desk.job.answer)
 	await create_timer(0.6).timeout

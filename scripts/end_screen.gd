@@ -11,9 +11,13 @@ var campaign: Dictionary
 var reply := ""
 
 
-func setup(c: Dictionary, r: String) -> void:
+var bounced: Array = []
+
+
+func setup(c: Dictionary, r: String, who: Array = []) -> void:
 	campaign = c
 	reply = r
+	bounced = who
 
 
 func _ready() -> void:
@@ -34,6 +38,13 @@ func _ready() -> void:
 	ball.custom_minimum_size = Vector2(240, 200)
 	ball.size_flags_horizontal = SIZE_SHRINK_CENTER
 	box.add_child(ball)
+	var head := UI.label(campaign.end.get("headline", "THEY BOUNCED BACK"), UI.FONT_SIZE * 2, Palette.TITLE_TEXT)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(head)
+	for n in bounced:
+		var l := UI.label(String(campaign.end.get("bounced_line", "{name} bounced back.")).format({"name": n}), UI.FONT_SIZE, Palette.TITLE_TEXT)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(l)
 	var b := Button.new()
 	b.text = campaign.end.again
 	b.size_flags_horizontal = SIZE_SHRINK_CENTER

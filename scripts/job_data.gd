@@ -3,7 +3,7 @@ extends RefCounted
 const UIRef = preload("res://scripts/ui.gd")
 const REQUIRED := [
 	"client", "folder", "email", "texts", "pictures",
-	"picture_dir", "answer", "target", "replies", "shell", "ui",
+	"picture_dir", "replies", "shell", "ui",
 ]
 
 
@@ -99,8 +99,9 @@ static func validate(job: Dictionary) -> Array:
 				errs.append("ran needs ran.path")
 		"remote":
 			var r: Dictionary = job.get("remote", {})
-			if not (r.has("user") and r.has("folder") and r.get("goal", {}).has("opened")):
-				errs.append("remote needs remote.user, remote.folder, remote.goal.opened")
+			var g: Dictionary = r.get("goal", {})
+			if not (r.has("user") and r.has("folder") and (g.has("opened") or g.has("ran") or g.has("printed"))):
+				errs.append("remote needs remote.user, remote.folder and a goal: opened, ran or printed")
 	if job.get("single", false):
 		need.append("crowded")
 	if job.has("strikes"):
@@ -156,7 +157,7 @@ static func instantiate(job: Dictionary, avoid := "", force := "") -> Dictionary
 			j.answer = choices[randi() % choices.size()]
 	var re := RegEx.new()
 	re.compile("([0-9]+)[^0-9]*$")
-	var m := re.search(String(j.answer).get_file())
+	var m := re.search(String(j.get("answer", "")).get_file())
 	var n := str(m.get_string(1).to_int()) if m else ""
 	for f in j.texts:
 		j.texts[f] = j.texts[f].map(func(l): return String(l).replace("{answer_n}", n))

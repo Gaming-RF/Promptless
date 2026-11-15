@@ -2,8 +2,8 @@
 	"folder": "/clients/dex/lessons",
 	"email": {
 		"from": "Dex",
-		"subject": "teach me??",
-		"body": "ok so I found an old computer in a cupboard and it WORKS. I'm logged in. teach me? send me commands and I'll type exactly what you send (write dex ...). my club flyer is in here somewhere. notes.txt knows which one.\n\nDex",
+		"subject": "last lesson??",
+		"body": "ok so Sam's AI is dead too and I want to teach Sam. you teach me first? I'm on my old machine. send commands (write dex ...). my club flyer is in here. notes.txt knows which.\n\nDex",
 		"clickable": []
 	},
 	"texts": {
@@ -86,6 +86,7 @@
 		"paste": true
 	},
 	"replies": {
-		"right": "IT OPENED. I did that. ok you did. WE did. new club flyer says: we fix things by hand."
+		"right": "IT OPENED. I did that. now I'm teaching Sam. the whole town is bouncing back.",
+		"no_attachment": "send me COMMANDS not pictures!! write dex ..."
 	}
 }

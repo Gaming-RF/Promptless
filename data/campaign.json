@@ -1,15 +1,17 @@
 {
 	"title": "Promptless: Bounce Back",
-	"tagline": "Every AI went dark. Your old computer didn't.",
+	"tagline": "Everyone's AI went dark. Help them bounce back.",
 	"boot_button": "boot up",
 	"music": "res://assets/music/loop.ogg",
 	"jobs": [
 		"res://data/job_bounce_back.json",
-		"res://data/job_medal.json"
+		"res://data/job_dex_teach.json"
 	],
 	"end": {
 		"again": "play again",
-		"picture_job": 0
+		"picture_job": 0,
+		"headline": "THE TOWN IS BOUNCING BACK",
+		"bounced_line": "{name} bounced back."
 	},
 	"defaults": {
 		"client": {
@@ -23,7 +25,7 @@
 		},
 		"shell": {
 			"prompt": "$",
-			"welcome": "oldbox shell. you are in {folder}",
+			"welcome": "oldbox shell. helping the town bounce back. you are in {folder}",
 			"unknown": "{cmd}: command not found. try help",
 			"did_you_mean_cmd": "{cmd}: not found. did you mean {s}?",
 			"did_you_mean_file": "did you mean {s}?",
@@ -39,7 +41,8 @@
 				"also: cat head less echo pwd whoami",
 				"      history alias ps clear mv exit",
 				"Tab completes. Up/Down = history.",
-				"man COMMAND explains one."
+				"man COMMAND explains one.",
+				"Click HELP (bottom bar) for the full page."
 			],
 			"viewer": "pixview",
 			"alias": [
@@ -197,7 +200,43 @@
 			"clock": "time {t}",
 			"snapshot_tool": "SNAPSHOT",
 			"remote_title": "{user}'s screen",
-			"remote_opened": "[{file} opens on his screen]"
+			"remote_opened": "[{file} opens on their screen]",
+			"help": "HELP",
+			"close": "CLOSE",
+			"help_page": [
+				"HOW TO PLAY: HELP THEM BOUNCE BACK",
+				"Every AI went dark. First you fix things for people. Then you teach them to fix things themselves.",
+				"1. Dig: type commands in the terminal to find the right file.",
+				"2. Shape: open it and drag the window's edge or corner. The picture stretches to fill it.",
+				"3. SNAP the picture (button in its title bar) to attach it.",
+				"4. Send. Wrong answers bounce back. Read the reply and try again.",
+				"5. Teach: when a client asks to learn, type write NAME COMMAND. Their own machine runs exactly what you send.",
+				"",
+				"COMMANDS (type them, press Enter)",
+				"ls            list files (ls -a: hidden ones too)",
+				"open FILE     open a picture",
+				"grep WORD FILE  find lines with WORD. Capitals count.",
+				"cd FOLDER     go into a folder (cd .. back up, cd ~ home)",
+				"man COMMAND   the manual for a command",
+				"cp FILE DEST  copy a file (client files: copy them home first)",
+				"chmod +x FILE let a script run (+r: let it be read)",
+				"ps / kill PID list programs / stop one (numbers are in title bars)",
+				"sort FILE     lines in order (-n by number, -r reversed)",
+				"unzip FILE -d ~  unpack an archive into your home folder",
+				"su USER / sudo COMMAND  become someone / run as administrator",
+				"write NAME CMD  send a command to a client's machine (teach them)",
+				"help          the short list in the terminal",
+				"",
+				"KEYS",
+				"Tab completes names. Up/Down repeat old commands.",
+				"Esc: leave the terminal for the pictures. Then Tab picks one, arrows stretch,",
+				"Ctrl+arrows move, S snaps, T traces, Enter sends, Esc goes back.",
+				"",
+				"BUTTONS",
+				"TRACE (some jobs): see-through, to lay one picture on another.",
+				"SNAPSHOT: drag a box; every picture fully inside is attached.",
+				"text: big / normal, radio: on / off."
+			]
 		},
 		"home": "/home/you",
 		"users": {
@@ -211,5 +250,28 @@
 	"continue_button": "continue",
 	"new_game_button": "new game",
 	"replay_button": "replay: {subject}",
-	"best_label": "best {t}"
+	"best_label": "best {t}",
+	"help_button": "how to play",
+	"help_back": "back",
+	"settings_button": "settings",
+	"settings_labels": {
+		"title": "SETTINGS",
+		"music": "music",
+		"music_vol": "music volume",
+		"sfx_vol": "sound volume",
+		"big_text": "big text",
+		"fullscreen": "fullscreen",
+		"reset": "reset progress",
+		"reset_confirm": "click again to erase progress",
+		"reset_done": "progress erased",
+		"back": "back",
+		"on": "on",
+		"off": "off"
+	},
+	"other_campaigns": [
+		{
+			"label": "full game (draft)",
+			"path": "res://data/full/campaign.json"
+		}
+	]
 }

@@ -1,0 +1,111 @@
+{
+	"client": {
+		"name": "Dex",
+		"portrait_calm": "res://assets/dex_calm.png",
+		"portrait_panic": "res://assets/dex_panic.png"
+	},
+	"folder": "/clients/dex/lesson",
+	"email": {
+		"from": "Dex",
+		"subject": "my turn??",
+		"body": "ok I can't need a wizard forever. I found my old laptop. send me commands and I'll type EXACTLY what you send, like: write dex ls. the newsletter photo is on there somewhere. my notes say which. teach me to bounce back.\n\nDex",
+		"clickable": [
+			"write dex ls"
+		]
+	},
+	"texts": {
+		"how.txt": [
+			"write dex COMMAND",
+			"sends one command to dex's laptop.",
+			"he types it exactly. typos too."
+		]
+	},
+	"pictures": [],
+	"check": "remote",
+	"remote": {
+		"user": "dex",
+		"folder": "/home/dex",
+		"texts": {
+			"notes.txt": [
+				"things that died: poster bot, homework bot, alarm bot",
+				"things that live: me (barely)",
+				"Newsletter photo = photo 4. the one where we're all jumping.",
+				"photo 1 is blurry",
+				"photo 2 has the ref's thumb",
+				"photo 3 is just sky",
+				"coach says we bounced back. coach is right for once"
+			]
+		},
+		"pictures": [
+			{
+				"file": "photo_1.png",
+				"open_size": [
+					120,
+					90
+				],
+				"placeholder": {
+					"kind": "label",
+					"text": "photo 1"
+				}
+			},
+			{
+				"file": "photo_2.png",
+				"open_size": [
+					120,
+					90
+				],
+				"placeholder": {
+					"kind": "label",
+					"text": "photo 2"
+				}
+			},
+			{
+				"file": "photo_3.png",
+				"open_size": [
+					120,
+					90
+				],
+				"placeholder": {
+					"kind": "label",
+					"text": "photo 3"
+				}
+			},
+			{
+				"file": "photo_4.png",
+				"open_size": [
+					120,
+					90
+				],
+				"placeholder": {
+					"kind": "label",
+					"text": "photo 4"
+				}
+			},
+			{
+				"file": "photo_5.png",
+				"open_size": [
+					120,
+					90
+				],
+				"placeholder": {
+					"kind": "label",
+					"text": "photo 5"
+				}
+			}
+		],
+		"goal": {
+			"opened": "photo_4.png"
+		},
+		"did_it": "I DID THAT. I typed it. it's open!!"
+	},
+	"sticky": {
+		"lines": [
+			"write dex COMMAND"
+		],
+		"paste": true
+	},
+	"replies": {
+		"right": "I opened it MYSELF. I'm bouncing back. tell the whole town: we can fix things by hand.",
+		"no_attachment": "don't send me pictures, send me COMMANDS. like: write dex ls"
+	}
+}

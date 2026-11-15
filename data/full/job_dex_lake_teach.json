@@ -1,0 +1,52 @@
+{
+	"client": {
+		"name": "Dex",
+		"portrait_calm": "res://assets/dex_calm.png",
+		"portrait_panic": "res://assets/dex_panic.png"
+	},
+	"folder": "/clients/dex/lesson2",
+	"email": {
+		"from": "Dex",
+		"subject": "quiz tomorrow!!",
+		"body": "geography quiz tomorrow and I want to find things MYSELF this time. my notes are on my laptop. write dex and I'll type it. which lake is the deep one? it's in geo.txt somewhere.\n\nDex",
+		"clickable": []
+	},
+	"texts": {
+		"how.txt": [
+			"write dex COMMAND",
+			"sends one command to their machine.",
+			"they type it exactly. typos too."
+		]
+	},
+	"pictures": [],
+	"check": "remote",
+	"remote": {
+		"user": "dex",
+		"folder": "/home/dex",
+		"texts": {
+			"geo.txt": [
+				"Lake Orrin: round (thanks wizard)",
+				"Lake Tarn: long",
+				"Deepest lake: Mire (prof said twice)",
+				"Lake Bel: shallow",
+				"rivers: still downhill"
+			]
+		},
+		"pictures": [],
+		"extra_files": [],
+		"goal": {
+			"printed": "Deepest lake: Mire"
+		},
+		"did_it": "I FOUND IT. grep is my best friend now."
+	},
+	"sticky": {
+		"lines": [
+			"write dex COMMAND"
+		],
+		"paste": false
+	},
+	"replies": {
+		"right": "got it myself. I'm bouncing back from that midterm. Ansel says I should write to him too.",
+		"no_attachment": "Don't send me a picture. Send me the commands. I want to do it myself."
+	}
+}

@@ -47,6 +47,10 @@ func _ready() -> void:
 	_snap_btn.pressed.connect(start_snapshot_tool)
 	add_child(_snap_btn)
 
+	_help_btn.focus_mode = FOCUS_NONE
+	_help_btn.pressed.connect(open_help)
+	add_child(_help_btn)
+
 	_text_btn.focus_mode = FOCUS_NONE
 	_text_btn.pressed.connect(func(): set_big_text(not big_text))
 	add_child(_text_btn)
@@ -57,6 +61,8 @@ func _ready() -> void:
 	_update_music_btn()
 
 	load_jobs(initial if initial is Array else [initial])
+	if sfx.settings.get("big_text", false):
+		set_big_text(true)
 
 
 func load_job(j: Dictionary, avoid := "", force := "") -> void:
@@ -221,8 +227,13 @@ func _remote(line: String) -> void:
 	for l in rr.out + rr.hint:
 		remote_screen.append_line(l)
 	if rr.open != "":
-		remote_screen.append_line(job.ui.get("remote_opened", "[{file} opens on his screen]").format({"file": rr.open.get_file()}))
-	if not finished and Judge.remote_ok(job, rr.open):
+		remote_screen.append_line(job.ui.get("remote_opened", "[{file} opens on their screen]").format({"file": rr.open.get_file()}))
+	if not finished and Judge.remote_ok(job, rr):
+		if job.remote.has("did_it"):
+			remote_screen.append_line("%s: %s" % [job.remote.user, job.remote.did_it])
+		var who := String(job.client.name)
+		if not who in bounced:
+			bounced.append(who)
 		_reply(JobData.pick(job.replies.right, 0))
 		_win(job.replies.right)
 
@@ -264,7 +275,7 @@ func send() -> void:
 			_reply(JobData.pick(job.replies.give_up, 0))
 			finished = true
 			sfx.play("mail")
-			var old_answer: String = job.answer
+			var old_answer: String = job.get("answer", "")
 			var which := cur
 			get_tree().create_timer(2.2).timeout.connect(func(): restart_slot(which, old_answer))
 			return
@@ -311,6 +322,9 @@ func _toggle_music() -> void:
 
 func set_big_text(on: bool) -> void:
 	big_text = on
+	if sfx.settings.big_text != on:
+		sfx.settings.big_text = on
+		sfx.save_settings()
 	var px := UI.FONT_SIZE * (2 if on else 1)
 	term.set_text_size(px)
 	email.set_text_size(px)
@@ -318,6 +332,28 @@ func set_big_text(on: bool) -> void:
 		w.set_text_size(px)
 	_update_music_btn()
 	changed.emit()
+
+
+var help_window
+var _help_btn := Button.new()
+
+
+func open_help() -> void:
+	if help_window and is_instance_valid(help_window):
+		_focus(help_window, false)
+		return
+	help_window = TextWindow.new()
+	add_child(help_window)
+	help_window.setup("help", job.ui.get("help_page", []), Vector2(300, 220))
+	help_window.set_title(job.ui.get("help", "HELP"))
+	help_window.add_title_button(job.ui.get("close", "CLOSE"), func():
+		help_window.queue_free()
+		help_window = null)
+	help_window.position = Vector2(170, 40)
+	if big_text:
+		help_window.set_text_size(UI.FONT_SIZE * 2)
+	help_window.focused.connect(_focus)
+	_focus(help_window, false)
 
 
 func _update_music_btn() -> void:
@@ -330,6 +366,9 @@ func _update_music_btn() -> void:
 	_snap_btn.text = job.ui.get("snapshot_tool", "SNAPSHOT")
 	_snap_btn.reset_size()
 	_snap_btn.position = Vector2(_text_btn.position.x - _snap_btn.size.x - 4, _music_btn.position.y)
+	_help_btn.text = job.ui.get("help", "HELP")
+	_help_btn.reset_size()
+	_help_btn.position = Vector2(_snap_btn.position.x - _help_btn.size.x - 4, _music_btn.position.y)
 
 
 func export_state() -> Dictionary:
@@ -339,7 +378,8 @@ func export_state() -> Dictionary:
 		wins.append({"file": w.file, "x": w.position.x, "y": w.position.y, "w": cs.x, "h": cs.y, "tracing": w.tracing})
 	return {
 		"cur": cur,
-		"slots": slots.map(func(sl): return {"answer": sl.job.answer, "strikes": sl.strikes, "finished": sl.finished, "replies": sl.replies, "mail_path": sl.get("mail_path", "")}),
+		"bounced": bounced,
+		"slots": slots.map(func(sl): return {"answer": sl.job.get("answer", ""), "strikes": sl.strikes, "finished": sl.finished, "replies": sl.replies, "mail_path": sl.get("mail_path", "")}),
 		"snap_count": snap_count,
 		"home": shell.fs.export_under(shell.fs.home),
 		"history": shell.history,
@@ -361,6 +401,7 @@ func import_state(st: Dictionary) -> void:
 		slots[i].finished = saved[i].get("finished", false)
 		slots[i].replies = saved[i].get("replies", [])
 	select_job(clampi(int(st.get("cur", 0)), 0, slots.size() - 1))
+	bounced = st.get("bounced", bounced)
 	snap_count = int(st.get("snap_count", 0))
 	shell.fs.import_nodes(st.get("home", {}))
 	shell.history = st.get("history", [])
@@ -412,4 +453,4 @@ func _tick_clock() -> void:
 	var t := int(clock_seconds())
 	_clock_label.text = job.ui.get("clock", "time {t}").format({"t": "%d:%02d" % [t / 60, t % 60]})
 	_clock_label.reset_size()
-	_clock_label.position = Vector2(318, 360 - _clock_label.size.y - 6)
+	_clock_label.position = Vector2(640 - _clock_label.size.x - 6, 360 - 2 * _clock_label.size.y - 12)
