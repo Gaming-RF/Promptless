@@ -19,7 +19,7 @@
 			"ball 1 = the old practice ball from the shed",
 			"Hornets have the other court at 6",
 			"poster bot said 'done!' then died. great.",
-			"photos: Sam took 5 of the game ball, all bad",
+			"photos: Sam took 5 of the game ball, all squashed",
 			"ball 2 = Sam's cousin's ball, has a sticker",
 			"remember: shin pads, water, ID",
 			"ref is the tall one from last year. be nice",
@@ -87,9 +87,9 @@
 		"tolerance": 6
 	},
 	"replies": {
-		"right": "IT'S ROUND. it bounces. WE bounce back. you are a wizard. ok next time teach me how??",
+		"right": "IT'S ROUND. it bounces. WE bounce back. you're a wizard, but wizards can't be on call forever. next time, teach me how?",
 		"wrong_file": "Message bounced back: that's not the Comets ball.",
 		"wrong_shape": "Message bounced back: coach says that's an egg.",
-		"wrong_size": "Message bounced back: it's round! but coach says the poster needs it 160 big."
+		"wrong_size": "Message bounced back: round, yes! but the wrong size. the poster needs it exactly 160 big."
 	}
 }

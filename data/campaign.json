@@ -1,6 +1,6 @@
 {
 	"title": "Promptless: Bounce Back",
-	"tagline": "Everyone's AI went dark. Help them bounce back.",
+	"tagline": "Every AI went dark. Fix their stuff, then teach them to bounce back.",
 	"boot_button": "boot up",
 	"music": "res://assets/music/loop.ogg",
 	"jobs": [
@@ -21,17 +21,17 @@
 		},
 		"picture_dir": "res://assets/",
 		"replies": {
-			"no_attachment": "Message bounced back: you forgot the photo??"
+			"no_attachment": "Message bounced back: no photo attached?? SNAP one first, then hit Send."
 		},
 		"shell": {
 			"prompt": "$",
-			"welcome": "oldbox shell. helping the town bounce back. you are in {folder}",
+			"welcome": "oldbox shell. the AI is gone, the terminal is not. you are in {folder}",
 			"unknown": "{cmd}: command not found. try help",
 			"did_you_mean_cmd": "{cmd}: not found. did you mean {s}?",
 			"did_you_mean_file": "did you mean {s}?",
 			"pipes": "not supported by this shell",
 			"grep_usage": "usage: grep WORD FILE",
-			"grep_no_match": "(nothing matched. grep cares about Capitals.)",
+			"grep_no_match": "(no match. grep is picky about Capitals. check your spelling.)",
 			"open_usage": "usage: open FILE",
 			"open_text": "{n} lines of chaos. Try grep.",
 			"help": [
@@ -168,7 +168,7 @@
 			"cp_usage": "usage: cp FILE DEST",
 			"chmod_usage": "usage: chmod +x FILE",
 			"kill_usage": "usage: kill PID   (the number in a window's title bar)",
-			"kill_protected": "kill: ({pid}) - not that one. {cmd} is holding this whole machine together.",
+			"kill_protected": "kill: ({pid}) - nope. {cmd} is holding this whole machine together.",
 			"open_script": "open: {file} is a script. run it with ./{file}",
 			"sort_usage": "usage: sort [-r] [-n] FILE",
 			"unzip_usage": "usage: unzip FILE [-d FOLDER]",
@@ -181,7 +181,7 @@
 			"sudo_password": "[sudo] password for {user}:",
 			"sudo_wrong": "sudo: 1 incorrect password attempt",
 			"sudo_denied": "{user} is not in the sudoers file. This incident will be reported.",
-			"exit_last": "exit: nowhere to go. this is the only computer that still works.",
+			"exit_last": "exit: nowhere to go. this is the last computer that still works.",
 			"more_files": "new mail. more files in {folder}",
 			"respawn": "{cmd}: a window closed. drawing another.",
 			"snap_empty": "snapshot: no picture window fully inside that rectangle",
@@ -207,10 +207,10 @@
 				"HOW TO PLAY: HELP THEM BOUNCE BACK",
 				"Every AI went dark. First you fix things for people. Then you teach them to fix things themselves.",
 				"1. Dig: type commands in the terminal to find the right file.",
-				"2. Shape: open it and drag the window's edge or corner. The picture stretches to fill it.",
+				"2. Shape: open it, then drag the window's edge or corner. The picture stretches to fit.",
 				"3. SNAP the picture (button in its title bar) to attach it.",
 				"4. Send. Wrong answers bounce back. Read the reply and try again.",
-				"5. Teach: when a client asks to learn, type write NAME COMMAND. Their own machine runs exactly what you send.",
+				"5. Teach: when a client wants to learn, type write NAME COMMAND. Their own machine runs exactly what you send, typos included.",
 				"",
 				"COMMANDS (type them, press Enter)",
 				"ls            list files (ls -a: hidden ones too)",
@@ -267,11 +267,5 @@
 		"back": "back",
 		"on": "on",
 		"off": "off"
-	},
-	"other_campaigns": [
-		{
-			"label": "full game (draft)",
-			"path": "res://data/full/campaign.json"
-		}
-	]
+	}
 }

@@ -6,6 +6,7 @@ const Palette = preload("res://scripts/palette.gd")
 const UI = preload("res://scripts/ui.gd")
 const JobData = preload("res://scripts/job_data.gd")
 const BounceBall = preload("res://scripts/bounce_ball.gd")
+const Juice = preload("res://scripts/juice.gd")
 
 var campaign: Dictionary
 var reply := ""
@@ -51,3 +52,5 @@ func _ready() -> void:
 	b.pressed.connect(func(): again.emit())
 	box.add_child(b)
 	b.grab_focus.call_deferred()
+	Juice.confetti(self, Vector2(320, 150))
+	get_tree().create_timer(0.7).timeout.connect(func(): Juice.confetti(self, Vector2(220, 170)); Juice.confetti(self, Vector2(420, 170)))

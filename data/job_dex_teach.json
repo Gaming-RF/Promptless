@@ -8,7 +8,7 @@
 	"email": {
 		"from": "Dex",
 		"subject": "my turn??",
-		"body": "ok I can't need a wizard forever. I found my old laptop. send me commands and I'll type EXACTLY what you send, like: write dex ls. the newsletter photo is on there somewhere. my notes say which. teach me to bounce back.\n\nDex",
+		"body": "ok. I can't need a wizard forever. I dug out my old laptop. you send commands, I type EXACTLY what you send, typos included. try: write dex ls. the newsletter photo is on there somewhere and my notes say which. teach me to bounce back.\n\nDex",
 		"clickable": [
 			"write dex ls"
 		]
@@ -96,7 +96,7 @@
 		"goal": {
 			"opened": "photo_4.png"
 		},
-		"did_it": "I DID THAT. I typed it. it's open!!"
+		"did_it": "I DID THAT. me. my own fingers. it's OPEN!!"
 	},
 	"sticky": {
 		"lines": [
@@ -105,7 +105,7 @@
 		"paste": true
 	},
 	"replies": {
-		"right": "I opened it MYSELF. I'm bouncing back. tell the whole town: we can fix things by hand.",
-		"no_attachment": "don't send me pictures, send me COMMANDS. like: write dex ls"
+		"right": "I opened it MYSELF. no wizard, no AI, just me and a terminal. I'm bouncing back. tell the town: we can fix things by hand.",
+		"no_attachment": "a picture?? I can find pictures myself. I need COMMANDS. like: write dex ls"
 	}
 }

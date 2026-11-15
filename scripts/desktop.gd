@@ -1,5 +1,7 @@
 extends "res://scripts/desktop_windows.gd"
 
+const Juice = preload("res://scripts/juice.gd")
+
 func setup(j, s: Node) -> void:
 	initial = j
 	job = j[0] if j is Array else j
@@ -284,6 +286,7 @@ func send() -> void:
 		_win(reply)
 		return
 	sfx.play("mail")
+	Juice.recoil(email)
 	if v != "no_attachment":
 		attachment = null
 		email.clear_attachment()
@@ -295,6 +298,8 @@ func _win(reply: String) -> void:
 	finished = true
 	email.set_mood("calm")
 	sfx.play("success")
+	Juice.hop(email.portrait)
+	Juice.confetti(self, email.position + Vector2(email.size.x / 2.0, 20.0))
 	attachment = null
 	email.clear_attachment()
 	email.set_inbox(slots.map(func(sl): return sl.job.client.name), cur, slots.map(func(sl): return sl.finished))
