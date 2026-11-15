@@ -1,6 +1,6 @@
 # Job file format (frozen)
 
-A campaign (`data/campaign.json`, `data/full/campaign.json`) lists jobs. Each job is one JSON
+A campaign (`data/campaign.json`) lists jobs (job files live in `data/` and `data/full/`). Each job is one JSON
 file. `campaign.defaults` is merged under every job, so a job states only what is its own.
 `JobData.validate()` checks all of this on load.
 
@@ -15,7 +15,7 @@ file. `campaign.defaults` is merged under every job, so a job states only what i
 | `jobs` | Job file paths in order. An entry that is a **list** = those jobs run at once (inbox tabs) |
 | `save` | `true` = autosave + continue |
 | `music` | Path of the radio's loop |
-| `end` | `{again, picture_job, headline, bounced_line}`: end screen; `bounced_line` uses `{name}` for each client who bounced back |
+| `end` | `{again, picture, headline, bounced_line}`: end screen (`picture` = the bouncing ball on title + end); `bounced_line` uses `{name}` for each client who bounced back |
 | `replay_button`, `best_label` | Timed-replay buttons on the title |
 | `defaults` | Merged under every job: `client`, `picture_dir`, `home`, `users`, `replies`, `shell` (all terminal text + man pages), `ui` (all button/label text) |
 

@@ -6,6 +6,12 @@ const Judge = preload("res://scripts/judge.gd")
 
 var fails := 0
 var medal: Dictionary
+var jam: Dictionary
+
+
+func use_jam(m) -> void:
+	m.campaign = jam.duplicate(true)
+	m.save_path = "user://test_save_main.json"
 
 
 func check(cond: bool, msg: String) -> void:
@@ -363,6 +369,7 @@ func check_saving(base: Dictionary) -> void:
 	var m = load("res://scenes/main.tscn").instantiate()
 	root.add_child(m)
 	await process_frame
+	use_jam(m)
 	m.save_path = "user://test_save.json"
 	SaveFile.clear(m.save_path)
 	check(not m.can_continue(), "save: jam campaign has saving off")
@@ -465,6 +472,7 @@ func check_replays() -> void:
 	var m = load("res://scenes/main.tscn").instantiate()
 	root.add_child(m)
 	await process_frame
+	use_jam(m)
 	m.records_path = "user://test_records.json"
 	SaveFile.clear(m.records_path)
 	check(m.replays().is_empty(), "replay: jam jobs aren't timed")
@@ -507,14 +515,15 @@ var solutions
 
 func check_full_campaign() -> void:
 	solutions = load("res://tests/solutions.gd").new(self, check)
-	var fc := JobData.load_campaign("res://data/full/campaign.json")
-	check(fc.jobs.size() == 13 and fc.title == "Promptless" and fc.defaults.shell.has("man"), "full: campaign extends the jam defaults")
+	var fc := JobData.load_campaign("res://data/campaign.json")
+	check(fc.jobs.size() == 13 and fc.title == "Promptless: Bounce Back" and fc.defaults.shell.has("man"), "full: the main campaign has all 13 steps")
 	for e in fc.jobs:
 		for j in (e if e is Array else [e]):
 			check_job_data(j)
 	var m = load("res://scenes/main.tscn").instantiate()
 	root.add_child(m)
 	await process_frame
+	use_jam(m)
 	m.campaign = fc
 	m.campaign.save = false
 	m.start_game(false)
@@ -552,6 +561,7 @@ func check_help_and_settings() -> void:
 	var m = load("res://scenes/main.tscn").instantiate()
 	root.add_child(m)
 	await process_frame
+	use_jam(m)
 	m.show_help()
 	await process_frame
 	var txt: String = m.current.find_children("*", "RichTextLabel", true, false)[0].text
@@ -587,6 +597,7 @@ func check_help_and_settings() -> void:
 	var m2 = load("res://scenes/main.tscn").instantiate()
 	root.add_child(m2)
 	await process_frame
+	use_jam(m2)
 	check(m2.sfx.settings.big_text and not m2.sfx.music_on, "settings: loaded on next start")
 	m2.start_game(false)
 	await process_frame
@@ -609,9 +620,13 @@ func _initialize() -> void:
 	load("res://scripts/sfx.gd").default_settings_path = "user://test_settings.json"
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_settings.json"))
 	var c := JobData.load_campaign("res://data/campaign.json")
+	check(c.jobs.size() == 13 and c.save, "main campaign is the full game, saving on")
+	c.jobs = [JobData._load_job(c, "res://data/job_bounce_back.json"), JobData._load_job(c, "res://data/job_dex_teach.json")]
+	c.save = false
+	jam = c
 	medal = JobData._load_job(c, "res://data/job_medal.json")
 	check_job_data(medal)
-	check(c.jobs.size() == 2, "campaign has 2 jobs")
+	check(c.jobs.size() == 2, "jam pair has 2 jobs")
 	for j in c.jobs:
 		check_job_data(j)
 
@@ -686,6 +701,7 @@ func _initialize() -> void:
 	var main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	await process_frame
+	use_jam(main)
 	main.start_game()
 	await process_frame
 	var desk = main.current

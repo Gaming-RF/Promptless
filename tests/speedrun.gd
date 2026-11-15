@@ -6,11 +6,9 @@ var pace := 0.6
 
 
 func _initialize() -> void:
-	var path := "res://data/full/campaign.json"
+	var path := "res://data/campaign.json"
 	for a in OS.get_cmdline_user_args():
-		if a == "--jam":
-			path = "res://data/campaign.json"
-		elif a.begins_with("--pace="):
+		if a.begins_with("--pace="):
 			pace = a.substr(7).to_float()
 	load("res://scripts/sfx.gd").default_settings_path = "user://speedrun_settings.json"
 	var solutions = load("res://tests/solutions.gd").new(self, func(ok, msg): if not ok: print("  !! ", msg))

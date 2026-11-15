@@ -70,6 +70,12 @@ func _initialize() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_settings_input.json"))
 	main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
+	await frames(2)
+	var JD = load("res://scripts/job_data.gd")
+	main.campaign.jobs = [JD._load_job(main.campaign, "res://data/job_bounce_back.json"), JD._load_job(main.campaign, "res://data/job_dex_teach.json")]
+	main.campaign.save = false
+	main.save_path = "user://test_save_input.json"
+	main.show_title()
 	await frames(4)
 	await key(KEY_ENTER)
 	await frames(3)

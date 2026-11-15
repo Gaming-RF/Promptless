@@ -1,19 +1,13 @@
-# Promptless: Bounce Back (jam build, Godot 4.7)
+# Promptless: Bounce Back (Godot 4.7)
 
-Help them bounce back. Two jobs, ~3 minutes. Job 1 (fix): read Dex's email -> `grep Comets notes.txt`
--> `open ball_3.png` -> stretch the window until the ball is round -> SNAP -> Send. Job 2 (teach): Dex
-wants to learn, so you send commands to his own laptop with `write dex ...` until he opens the
-newsletter photo himself. The end screen lists who bounced back.
-Title screen: how to play, settings (music, volumes, big text, fullscreen, reset). The full-game
-draft isn't on the jam title (placeholder art); add `"other_campaigns": [{"label": "full game (draft)",
-"path": "res://data/full/campaign.json"}]` to `data/campaign.json` to show it again (desktop runs only:
-the web export leaves out `data/full/`).
+Help them bounce back. 14 levels (13 steps; Ansel's ledger and a Dex lesson run at once). Every client
+is fixed first, then taught to fix things themselves with `write NAME ...`. Starts with Dex's ID photo,
+his squashed Comets ball and teaching Dex; then Lake Orrin, Marguerite, the Okafors, Tobi, Ansel, the
+previous owner (run/wait choice) and Dex's last lesson. Saves automatically; the title offers continue.
+Levels without real art yet draw code placeholders (see `docs/JOB_FORMAT.md`).
 
 - **Run:** `godot --path .` (or F5 in the editor)
-- **Full-game draft:** `godot --path . -- --campaign=res://data/full/campaign.json`
-  (fix -> teach pairs for Dex, Marguerite, the Okafors and Tobi; Lake Orrin; Ansel + Dex at once;
-  the previous owner with the run/wait choice; Dex's last lesson;
-  code-drawn placeholder art until real pictures exist at the same file names; all text is a draft)
+- **Speedrun every level (automatic):** `godot --path . -s tests/speedrun.gd` (`-- --pace=0.1` for fast)
 - **Tests:** `godot --headless --path . -s tests/run_tests.gd` (logic + desktop) and
   `godot --headless --path . -s tests/input_test.gd` (real key/mouse events, full 90-second path)
 - **Content:** `data/campaign.json` holds the title, end screen, music, job order and shared
@@ -23,7 +17,7 @@ the web export leaves out `data/full/`).
   `tests/run_tests.gd` checks every job against the plan's rules (one grep hit, email <60 words,
   replies <30, every picture opens with one side at the target).
 - **Web export:** install export templates, then Project > Export > Web (preset included;
-  it already ships `data/*.json`).
+  it already ships `data/*.json` and `data/full/*.json`).
 
 - **After dropping in assets:** open the editor once (or `godot --headless --path . --import`)
   so Godot imports them, otherwise they won't load.

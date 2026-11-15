@@ -33,14 +33,13 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 10)
 	add_child(box)
 	box.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	var job: Dictionary = campaign.jobs[campaign.end.get("picture_job", 0)]
+
 	var holder := CenterContainer.new()
 	holder.custom_minimum_size = Vector2(110, 80)
 	holder.size_flags_horizontal = SIZE_SHRINK_CENTER
 	box.add_child(holder)
 	var ball := PictureView.new()
-	ball.texture = JobData.picture_texture(job, job.answer)
-	ball.variant = JobData.picture_index(job, job.answer)
+	ball.texture = UI.find([campaign.end.get("picture", "")])
 	ball.custom_minimum_size = Vector2(104, 36)
 	holder.add_child(ball)
 	var t := ball.create_tween().set_loops()

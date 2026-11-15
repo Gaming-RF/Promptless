@@ -32,10 +32,9 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 8)
 	add_child(box)
 	box.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	var job: Dictionary = campaign.jobs[campaign.end.get("picture_job", 0)]
+
 	var ball := BounceBall.new()
-	ball.texture = JobData.picture_texture(job, job.answer)
-	ball.variant = JobData.picture_index(job, job.answer)
+	ball.texture = UI.find([campaign.end.get("picture", "")])
 	ball.custom_minimum_size = Vector2(240, 200)
 	ball.size_flags_horizontal = SIZE_SHRINK_CENTER
 	box.add_child(ball)

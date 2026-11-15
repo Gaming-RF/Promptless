@@ -4,14 +4,28 @@
 	"boot_button": "boot up",
 	"music": "res://assets/music/loop.ogg",
 	"jobs": [
+		"res://data/full/job_boot_1.json",
 		"res://data/job_bounce_back.json",
-		"res://data/job_dex_teach.json"
+		"res://data/job_dex_teach.json",
+		"res://data/full/job_lake.json",
+		"res://data/full/job_marguerite.json",
+		"res://data/full/job_marguerite_teach.json",
+		"res://data/full/job_okafor.json",
+		"res://data/full/job_okafor_teach.json",
+		"res://data/full/job_tobi.json",
+		"res://data/full/job_tobi_teach.json",
+		[
+			"res://data/full/job_ansel.json",
+			"res://data/full/job_dex_lake_teach.json"
+		],
+		"res://data/full/job_owner.json",
+		"res://data/full/job_dex_final.json"
 	],
 	"end": {
 		"again": "play again",
-		"picture_job": 0,
 		"headline": "THE TOWN IS BOUNCING BACK",
-		"bounced_line": "{name} bounced back."
+		"bounced_line": "{name} bounced back.",
+		"picture": "res://assets/ball_3.png"
 	},
 	"defaults": {
 		"client": {
@@ -246,7 +260,7 @@
 			}
 		}
 	},
-	"save": false,
+	"save": true,
 	"continue_button": "continue",
 	"new_game_button": "new game",
 	"replay_button": "replay: {subject}",
