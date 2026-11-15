@@ -6,7 +6,8 @@ same desktop: same pattern, two text files, eight photos, nothing clickable.
 
 - **Run:** `godot --path .` (or F5 in the editor)
 - **Full-game draft:** `godot --path . -- --campaign=res://data/full/campaign.json`
-  (6 jobs from the plan: Lake Orrin, Marguerite, the Okafors, Tobi, Ansel, the previous owner;
+  (9 jobs: chapter 0 x2, Lake Orrin, Marguerite, the Okafors, Tobi, Ansel, the previous owner
+  with the run/wait choice, and teaching Dex with `write dex ...`;
   code-drawn placeholder art until real pictures exist at the same file names; all text is a draft)
 - **Tests:** `godot --headless --path . -s tests/run_tests.gd` (logic + desktop) and
   `godot --headless --path . -s tests/input_test.gd` (real key/mouse events, full 90-second path)
@@ -23,6 +24,11 @@ same desktop: same pattern, two text files, eight photos, nothing clickable.
   so Godot imports them, otherwise they won't load.
 - **Web embed size:** integer scaling, so make the embed a multiple of 640x360 (1280x720, 1920x1080)
   or it shows at 1x with borders.
+
+## Docs
+- `docs/CONTRACTS.md` — shell↔desktop result, snapshot record, screen/palette
+- `docs/JOB_FORMAT.md` — every field a job file can use (checked by `JobData.validate()`)
+- `docs/DECISIONS.md` — every Toy-phase decision and why
 
 ## Assets
 All current assets are free CC0 / OFL downloads; sources and licences are in `CREDITS.md`.

@@ -116,7 +116,15 @@ func start_game(resume := false) -> void:
 	_dirty = false
 
 
+var endings: Array = []
+
+
 func _on_job_won(reply: String) -> void:
+	if current.has_method("export_state") and current.ending != "":
+		endings.append(current.ending)
+		var rec := records()
+		rec["endings"] = rec.get("endings", []) + [current.ending]
+		SaveFile.write(rec, records_path)
 	var entry_won = campaign.jobs[job_index]
 	if entry_won is Dictionary and entry_won.get("timed", false):
 		var r := records()

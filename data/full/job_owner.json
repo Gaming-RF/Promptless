@@ -8,7 +8,7 @@
 	"email": {
 		"from": "Ansel",
 		"subject": "about your machine",
-		"body": "Dear friend, that hidden folder in your home was hers, I think. Her notes end with a sentence I've read in every outage report. Only her account can end it. Whether to is your choice, not mine.\n\nAnsel",
+		"body": "Dear friend, that hidden folder in your home was hers, I think. Her notes end with a sentence I've read in every outage report. Only her account can end it. If you'd rather wait, just reply to me. Your choice, not mine.\n\nAnsel",
 		"clickable": []
 	},
 	"users": {
@@ -78,5 +78,11 @@
 		"right": "So it's done. The inbox will go quiet by morning. I'll still write, if that's all right. - A.",
 		"wrong_file": "[unused]",
 		"wrong_shape": "[unused]"
+	},
+	"ending": "run",
+	"alt": {
+		"on": "send_empty",
+		"ending": "wait",
+		"reply": "Then we wait. The inbox stays full a while longer. I'll keep writing. - A."
 	}
 }

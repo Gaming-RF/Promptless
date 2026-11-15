@@ -73,6 +73,7 @@ func _initialize() -> void:
 	await frames(3)
 	var desk = main.current
 	check(desk.get_script().resource_path.ends_with("desktop.gd"), "Enter on title boots the desktop")
+	check(desk.email.last_reply == "" and desk.attachment == null, "booting with Enter sends nothing")
 
 	await create_timer(0.6).timeout
 	await click(Vector2(200, 114))
@@ -113,6 +114,10 @@ func _initialize() -> void:
 	await key(KEY_RIGHT)
 	check(w.get_content_size() == Vector2(161, 160), "arrow resizes clicked picture")
 	await key(KEY_LEFT)
+	var replies_before: String = desk.email.last_reply
+	await type_text("ls")
+	await key(KEY_ENTER)
+	check(desk.term.output.get_parsed_text().ends_with("notes.txt\n") and desk.email.last_reply == replies_before and desk.attachment == null, "typing after clicking a picture goes to the terminal, not S/Enter shortcuts")
 
 	await click(desk.term.position + desk.term.size / 2)
 	await type_text("x")
@@ -181,11 +186,30 @@ func _initialize() -> void:
 	await key(KEY_T)
 	check(kw.tracing, "keys: T toggles tracing")
 	await key(KEY_S)
-	check(desk.attachment != null and desk.attachment.windows[0].file == kw.file, "keys: S takes a snapshot")
+	check(desk.attachment != null and desk.attachment.windows.any(func(e): return e.file == kw.file), "keys: S takes a snapshot")
 	var reply_before: String = desk.email.last_reply
 	await key(KEY_ENTER)
 	check(desk.email.last_reply != reply_before, "keys: Enter sends")
 	await key(KEY_ESCAPE)
 	check(desk.term.input.has_focus(), "keys: Escape returns to the terminal")
+	desk.load_job(JobData.merge(desk.job, {"tools": []}))
+	await frames(2)
+	var rw = desk.open_picture(desk.job.folder + "/" + desk.job.answer)
+	await create_timer(0.6).timeout
+	rw.position = Vector2(400, 60)
+	desk.attachment = null
+	await click(desk._snap_btn.get_global_rect().get_center())
+	check(desk._snap_overlay != null, "snapshot tool: button enters rectangle mode")
+	var r0: Vector2 = rw.position - Vector2(6, 6)
+	var r1: Vector2 = rw.position + rw.size + Vector2(6, 6)
+	await mouse("move", r0)
+	await mouse("down", r0)
+	for i in range(1, 6):
+		await mouse("move", r0.lerp(r1, i / 5.0))
+	await mouse("up", r1)
+	check(desk._snap_overlay == null and desk.attachment != null and desk.attachment.windows.size() == 1, "snapshot tool: dragging a rectangle snaps the window inside")
+	await click(desk._snap_btn.get_global_rect().get_center())
+	await key(KEY_ESCAPE)
+	check(desk._snap_overlay == null, "snapshot tool: Esc cancels")
 	print("\n%d failure(s)" % fails)
 	quit(1 if fails else 0)

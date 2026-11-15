@@ -37,6 +37,8 @@ static func _stretch(record: Dictionary, job: Dictionary) -> String:
 		return "wrong_file"
 	if job.get("single", false) and int(w.get("copies", 1)) > 1:
 		return "crowded"
+	if record.windows.size() > 1:
+		return "wrong_file"
 	if absf(w.w - t.w) <= t.tolerance and absf(w.h - t.h) <= t.tolerance:
 		return "right"
 	if absf(w.w - w.h) <= t.tolerance:
@@ -80,3 +82,10 @@ static func ran_ok(job: Dictionary, ran: Dictionary) -> bool:
 	if ran.path != path_of(job, want.path):
 		return false
 	return ran.user == "root" or not want.get("root", false)
+
+
+static func remote_ok(job: Dictionary, opened: String) -> bool:
+	if job.get("check", "") != "remote" or opened == "":
+		return false
+	var r: Dictionary = job.remote
+	return opened == String(r.folder) + "/" + String(r.goal.opened)

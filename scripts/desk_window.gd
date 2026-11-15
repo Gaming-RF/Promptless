@@ -128,6 +128,8 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, size), Palette.FRAME)
 		draw_rect(Rect2(1, TITLE_H + 1, size.x - 2, size.y - TITLE_H - 2), Palette.PANEL)
 	draw_rect(Rect2(1, 1, size.x - 2, TITLE_H), Palette.TITLE_ON if active else Palette.TITLE_OFF)
+	if active:
+		draw_rect(Rect2(1, TITLE_H - 1, size.x - 2, 2), Palette.TITLE_TEXT)
 
 
 func _draw_grip() -> void:

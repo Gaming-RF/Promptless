@@ -34,7 +34,8 @@
 				"placeholder": {
 					"kind": "grid"
 				}
-			}
+			},
+			"parent": "chart.sh"
 		},
 		{
 			"path": "README.txt",
@@ -60,8 +61,8 @@
 		"lines": [
 			"cp FILE DEST",
 			"chmod +x FILE",
-			"kill PID",
-			"ps"
+			"ps",
+			"kill PID"
 		],
 		"paste": false
 	},
@@ -69,7 +70,7 @@
 		"right": "Looks right. I mean it was always going to work. Thanks, I guess.",
 		"crowded": [
 			"Why are there four charts. Close the extras.",
-			"Still more than one chart."
+			"Still more than one chart. Is something making them?"
 		],
 		"wrong_file": [
 			"That's not my chart.",

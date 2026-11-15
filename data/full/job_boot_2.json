@@ -1,0 +1,63 @@
+{
+	"folder": "/clients/dex/club",
+	"email": {
+		"from": "Dex",
+		"subject": "one more??",
+		"body": "sorry. the club needs our team flyer and there are three files and I can't tell. it's the one called flyer_final_FINAL.png obviously. ls, open it, SNAP, send?\n\nDex",
+		"clickable": [
+			"ls"
+		]
+	},
+	"texts": {},
+	"pictures": [
+		{
+			"file": "flyer.png",
+			"open_size": [
+				100,
+				140
+			],
+			"placeholder": {
+				"kind": "lines"
+			}
+		},
+		{
+			"file": "flyer_final.png",
+			"open_size": [
+				100,
+				140
+			],
+			"placeholder": {
+				"kind": "lines"
+			}
+		},
+		{
+			"file": "flyer_final_FINAL.png",
+			"open_size": [
+				100,
+				140
+			],
+			"placeholder": {
+				"kind": "lines"
+			}
+		}
+	],
+	"answer": "flyer_final_FINAL.png",
+	"target": {
+		"w": 100,
+		"h": 140,
+		"tolerance": 6
+	},
+	"sticky": {
+		"lines": [
+			"ls",
+			"open FILE"
+		],
+		"paste": true
+	},
+	"replies": {
+		"right": "THAT ONE. ok I'm telling everyone about you. sorry in advance.",
+		"wrong_file": "no the FINAL final one",
+		"wrong_shape": "why's it squished",
+		"wrong_size": "bigger?"
+	}
+}

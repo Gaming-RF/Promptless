@@ -29,6 +29,8 @@ func reply_words_ok(r) -> bool:
 
 func check_job_data(job: Dictionary) -> void:
 	var tag: String = "[%s] " % job.folder
+	var errs: Array = JobData.validate(job)
+	check(errs.is_empty(), tag + "job file is valid " + str(errs))
 	var kind: String = job.get("check", "stretch")
 	if job.has("search_word"):
 		var word: String = job.search_word
@@ -59,6 +61,9 @@ func check_job_data(job: Dictionary) -> void:
 		check(absf(sz[0] - t.w) <= t.tolerance or absf(sz[1] - t.h) <= t.tolerance,
 			tag + "%s opens with one side at target" % p.file)
 	var j := JobData.instantiate(job)
+	if not j.has("search_word"):
+		check(Judge.verdict(rec(j.answer, t.w, t.h), j) == "right", tag + "target size wins")
+		return
 	var sh = Shell.new(j)
 	var key_line := ""
 	for f in j.texts:
@@ -168,12 +173,24 @@ func join_job(base: Dictionary) -> Dictionary:
 
 func check_window_tools(d, base: Dictionary) -> void:
 	d.load_job(base)
-	var b3 = d.open_picture("/clients/dex/ball_3.png")
-	var b1 = d.open_picture("/clients/dex/ball_1.png")
+	var b3 = d.open_picture("/clients/dex/ball_3.png", false, false)
+	var b1 = d.open_picture("/clients/dex/ball_1.png", false, false)
 	b1.position = b3.position
 	d.snapshot(b1)
 	check(d.attachment.windows.size() == 1, "jam jobs: overlapping windows are not captured together")
 	check(not b1._buttons.get_children().any(func(x): return x.text == "TRACE"), "jam jobs: no TRACE button")
+	b1.position = b3.position + Vector2(110, 0)
+	var got: bool = d.snapshot_rect(Rect2(0, 0, 640, 360))
+	check(got and d.attachment.windows.size() == 2, "rect: a big rectangle catches every window inside")
+	check(Judge.verdict(d.attachment, base) == "wrong_file", "rect: a collage doesn't count as the ball photo")
+	check(not d.snapshot_rect(Rect2(0, 0, 20, 20)), "rect: an empty rectangle snaps nothing")
+	check(d.snapshot_rect(b3.get_rect()) and d.attachment.windows.size() == 1 and d.attachment.windows[0].file.ends_with("ball_3.png"), "rect: a rectangle around one window")
+	b3.set_content_size(Vector2(160, 160))
+	b1.set_content_size(Vector2(40, 40))
+	b1.position = b3.position + Vector2(20, 30)
+	b3.move_to_front()
+	d.snapshot(b3)
+	check(d.attachment.windows.size() == 1 and Judge.verdict(d.attachment, base) == "right", "SNAP button: a smaller picture hidden behind doesn't spoil it")
 
 	var oj := overlay_job(base)
 	d.load_job(oj)
@@ -181,7 +198,7 @@ func check_window_tools(d, base: Dictionary) -> void:
 	var note = d.open_picture("/clients/dex/note.png")
 	note.position = memo.position
 	d.snapshot(note)
-	check(Judge.verdict(d.attachment, oj) == "wrong_file", "overlay: without tracing only one window is captured")
+	check(d.attachment.windows.size() == 1 and Judge.verdict(d.attachment, oj) == "wrong_file", "overlay: SNAP on an untraced note records just the note")
 	note.set_tracing(true)
 	check(note.see_through and note.view.material != null and note._trace_btn.text == "TRACING", "overlay: tracing mode on")
 	d.snapshot(note)
@@ -363,6 +380,7 @@ func check_saving(base: Dictionary) -> void:
 	d.set_big_text(true)
 	d.kill(103)
 	m.save_now(true)
+	var mail_before: Array = d.shell.run("ls ~/mail").out
 	check(m.can_continue(), "save: written")
 	m.show_title()
 	await process_frame
@@ -371,6 +389,7 @@ func check_saving(base: Dictionary) -> void:
 	m.start_game(true)
 	await process_frame
 	d = m.current
+	check(d.shell.run("ls ~/mail").out == mail_before and d.slots[0].mail_path.ends_with("01_dex.txt"), "save: continue doesn't duplicate mail " + str(d.shell.run("ls ~/mail").out))
 	var w2 = d.picture("ball_2.png")
 	check(w2 != null and w2.get_content_size() == Vector2(130, 160) and w2.position == Vector2(400, 30), "save: window size + place restored")
 	check(d.shell.fs.exists("/home/you/snapshot_1.png") and d.snap_count == 1, "save: home folder + snapshot count restored")
@@ -497,7 +516,7 @@ func win_wait(m, idx: int) -> void:
 
 func check_full_campaign() -> void:
 	var fc := JobData.load_campaign("res://data/full/campaign.json")
-	check(fc.jobs.size() == 6 and fc.title == "Promptless" and fc.defaults.shell.has("man"), "full: campaign extends the jam defaults")
+	check(fc.jobs.size() == 9 and fc.title == "Promptless" and fc.defaults.shell.has("man"), "full: campaign extends the jam defaults")
 	for j in fc.jobs:
 		check_job_data(j)
 	var m = load("res://scenes/main.tscn").instantiate()
@@ -508,6 +527,23 @@ func check_full_campaign() -> void:
 	m.start_game(false)
 	await process_frame
 	var d = m.current
+	check(d.email.body.text.contains("[url=0]"), "boot: chapter 0 email has clickable commands")
+	say(m, "ls")
+	say(m, "open id_photo.png")
+	d.snapshot(d.picture("id_photo.png"))
+	d.send()
+	check(d.email.last_reply.begins_with("bus pass WORKS"), "boot 1: open + SNAP wins")
+	await win_wait(m, 0)
+	d = m.current
+	say(m, "open flyer_final.png")
+	d.snapshot(d.picture("flyer_final.png"))
+	d.send()
+	check(d.email.last_reply == "no the FINAL final one", "boot 2: wrong flyer")
+	say(m, "open flyer_final_FINAL.png")
+	d.snapshot(d.picture("flyer_final_FINAL.png"))
+	d.send()
+	await win_wait(m, 1)
+	d = m.current
 	var lake: Dictionary = d.job
 	say(m, "grep Orrin notes.txt")
 	var n := String(lake.answer).get_basename().get_slice("_", 1).to_int()
@@ -516,7 +552,7 @@ func check_full_campaign() -> void:
 	mw.set_content_size(Vector2(160, 160))
 	d.snapshot(mw)
 	d.send()
-	await win_wait(m, 0)
+	await win_wait(m, 2)
 
 	d = m.current
 	say(m, "grep Priyanka sent_mail.txt")
@@ -527,7 +563,7 @@ func check_full_campaign() -> void:
 	d.snapshot(note)
 	d.send()
 	check(d.email.last_reply.begins_with("Forwarded"), "marguerite: traced note over memo wins")
-	await win_wait(m, 1)
+	await win_wait(m, 3)
 
 	d = m.current
 	say(m, "cd /clients/okafor")
@@ -543,7 +579,7 @@ func check_full_campaign() -> void:
 	d.snapshot(f1)
 	d.send()
 	check(d.email.last_reply.begins_with("Both of us"), "okafor: either copy on top works")
-	await win_wait(m, 2)
+	await win_wait(m, 4)
 
 	d = m.current
 	say(m, "chmod +x chart.sh")
@@ -561,12 +597,23 @@ func check_full_campaign() -> void:
 	d.snapshot(charts[0])
 	d.send()
 	check(d.email.last_reply.begins_with("Why are there four"), "tobi: crowded until the copies are killed")
-	for i in range(1, 4):
+	say(m, "kill %d" % charts[1].pid)
+	await process_frame
+	check(d.pictures.size() == 4 and d.term.output.get_parsed_text().contains("drawing another"), "tobi: killing a copy just respawns it")
+	var parent: Dictionary = d.running_programs().filter(func(p): return p.cmd == "chart.sh")[0]
+	check(parent.pid > 0 and d.pictures.values().all(func(w): return w.pid != parent.pid), "tobi: ps shows the windowless parent")
+	say(m, "kill %d" % parent.pid)
+	charts = d.pictures.values()
+	for i in range(1, charts.size()):
 		say(m, "kill %d" % charts[i].pid)
+	await process_frame
+	check(d.pictures.size() == 1, "tobi: with the parent gone, copies stay dead")
+	charts = d.pictures.values()
+	charts[0].set_content_size(Vector2(160, 160))
 	d.snapshot(charts[0])
 	d.send()
 	check(d.email.last_reply.begins_with("Looks right"), "tobi: one square chart wins")
-	await win_wait(m, 3)
+	await win_wait(m, 5)
 
 	d = m.current
 	say(m, "cat ~/mail/ansel_1.txt")
@@ -584,7 +631,7 @@ func check_full_campaign() -> void:
 	d.snapshot(pages[0])
 	d.send()
 	check(d.email.last_reply.begins_with("Splendid"), "ansel: pages joined in order win")
-	await win_wait(m, 4)
+	await win_wait(m, 6)
 
 	d = m.current
 	say(m, "cat notes.txt")
@@ -595,9 +642,31 @@ func check_full_campaign() -> void:
 	check(d.term.output.get_parsed_text().contains("run it as root") and not d.finished, "owner: needs root")
 	say(m, "sudo /home/owner/end_drill.sh")
 	say(m, "harbor1984")
-	check(d.finished and d.email.last_reply.begins_with("So it's done"), "owner: sudo her command ends the drill")
-	await win_wait(m, 5)
+	check(d.finished and d.email.last_reply.begins_with("So it's done") and d.ending == "run", "owner: sudo her command ends the drill")
+	await win_wait(m, 7)
+	d = m.current
+	check(d.remote_screen != null and d.remote_screen._title_label.text.ends_with("dex's screen"), "final: dex's screen window")
+	say(m, "write dex ls")
+	check(d.remote_screen.body.get_parsed_text().contains("flyer_1.png  flyer_2.png  flyer_3.png  flyer_4.png  notes.txt") and not d.remote_screen.body.get_parsed_text().contains("how.txt"), "final: his machine has only his files")
+	say(m, "write sam ls")
+	check(d.term.output.get_parsed_text().contains("sam is not logged in"), "final: write to someone else")
+	say(m, "write dex gerp flyer notes.txt")
+	check(d.remote_screen.body.get_parsed_text().contains("did you mean grep"), "final: his machine runs typos exactly")
+	say(m, "write dex grep club notes.txt")
+	check(d.remote_screen.body.get_parsed_text().contains("club flyer = flyer 3"), "final: grep runs on his machine")
+	say(m, "write dex open flyer_1.png")
+	check(not d.finished, "final: wrong flyer doesn't end it")
+	say(m, "write dex open flyer_3.png")
+	check(d.finished and d.email.last_reply.begins_with("IT OPENED"), "final: dex opens the right flyer")
+	await win_wait(m, 8)
 	check(m.current.get_script().resource_path.ends_with("end_screen.gd"), "full: campaign reaches the end screen")
+	check(m.endings == ["run"], "full: ending recorded")
+	m.campaign = fc
+	m.start_game(false)
+	await process_frame
+	m.current.load_job(fc.jobs[7])
+	m.current.send()
+	check(m.current.ending == "wait" and m.current.email.last_reply.begins_with("Then we wait"), "owner: an empty reply chooses to wait")
 	m.queue_free()
 
 
@@ -639,6 +708,12 @@ func _initialize() -> void:
 	r = sh.run("mv ball_3.png ball_9.png")
 	check("Read-only" in r.out[0], "mv: client folder is read-only")
 	check(sh.run("pwd").out == ["/clients/dex"], "pwd")
+	check(sh.run("echo ball_*.png").out == ["ball_1.png ball_2.png ball_3.png ball_4.png ball_5.png"], "glob: * expands, sorted")
+	check(sh.run("echo ball_?.png").out[0].split(" ").size() == 5, "glob: ? matches one character")
+	check(sh.run("echo \"ball_*\"").out == ["ball_*"], "glob: quoted stays literal")
+	check(sh.run("echo zz*").out == ["zz*"], "glob: no match stays literal (like bash)")
+	check(sh.run("grep Comets *.txt").out.size() == 1, "glob: grep across *.txt")
+	check(sh.run("echo /clients/dex/n*").out == ["/clients/dex/notes.txt"], "glob: in a path")
 	check(sh.run("echo hi there").out == ["hi there"], "echo")
 	check("pixview" in sh.run("alias").out[0], "alias reveals open = pixview")
 	check(sh.run("clear").clear, "clear")
@@ -656,6 +731,10 @@ func _initialize() -> void:
 	check(amb.line == "open ball_" and amb.options.is_empty(), "tab: common prefix")
 	amb = sh.complete("open ball_")
 	check(amb.options.size() == 5, "tab: lists options when stuck")
+	check(JobData.validate(JobData.merge(job, {"chek": "x"})) == ["unknown key 'chek'"], "validator: catches a typo'd key")
+	var bad := JobData.merge(job, {"check": "overlay"})
+	check(bad.check == "overlay" and "overlay needs overlay.top + overlay.under" in JobData.validate(bad), "validator: overlay without its settings")
+	check("unknown tool 'lasso'" in JobData.validate(JobData.merge(job, {"tools": ["lasso"]})), "validator: unknown tool")
 	check_file_system(job)
 	check_permissions(job)
 	check_late_commands(job)
@@ -696,10 +775,13 @@ func _initialize() -> void:
 	desk.send()
 	check(desk.email.last_reply == job.replies.right and desk.finished, "job 1 won")
 	check(desk.shell.fs.exists("/home/you/snapshot_3.png"), "snapshots are saved in the home folder")
+	check(desk.shell.run("grep Comets /home/you/mail/01_dex.txt").out.size() == 2, "mail: the email (and the Comets reply) are greppable in ~/mail")
+	check(desk.shell.run("grep bounced ~/mail/01_dex.txt").out.size() == 3, "mail: replies are appended to it")
 	await create_timer(2.6).timeout
 	check(main.current == desk and desk.job == c.jobs[1], "job 2 loads on the same desktop")
 	check(desk.pictures.is_empty() and not desk.finished, "job 2 starts clean")
 	check(desk.shell.fs.exists("/home/you/snapshot_3.png"), "home folder carries over to job 2")
+	check(desk.shell.run("ls ~/mail").out == ["01_dex.txt  02_dex.txt"], "mail: old letters stay, new one added")
 	desk.run_command("open ~/snapshot_3.png")
 	check(desk.picture("snapshot_3.png") != null and desk.picture("snapshot_3.png").get_content_size() == Vector2(160, 160), "a snapshot opens at the size it was taken")
 	var job2: Dictionary = c.jobs[1]

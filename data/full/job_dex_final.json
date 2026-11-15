@@ -1,0 +1,91 @@
+{
+	"folder": "/clients/dex/lessons",
+	"email": {
+		"from": "Dex",
+		"subject": "teach me??",
+		"body": "ok so I found an old computer in a cupboard and it WORKS. I'm logged in. teach me? send me commands and I'll type exactly what you send (write dex ...). my club flyer is in here somewhere. notes.txt knows which one.\n\nDex",
+		"clickable": []
+	},
+	"texts": {
+		"how.txt": [
+			"write dex COMMAND",
+			"sends one line to dex's terminal.",
+			"he types it exactly. typos too."
+		]
+	},
+	"pictures": [],
+	"answer": "how.txt",
+	"target": {
+		"w": 0,
+		"h": 0,
+		"tolerance": 0
+	},
+	"check": "remote",
+	"remote": {
+		"user": "dex",
+		"folder": "/home/dex",
+		"texts": {
+			"notes.txt": [
+				"things to fix: bike, sleep, grades",
+				"club flyer = flyer 3 (the good one)",
+				"flyer 1 has a typo",
+				"flyer 2 is upside down",
+				"flyer 4 is just the word FLYER"
+			]
+		},
+		"pictures": [
+			{
+				"file": "flyer_1.png",
+				"open_size": [
+					100,
+					140
+				],
+				"placeholder": {
+					"kind": "lines"
+				}
+			},
+			{
+				"file": "flyer_2.png",
+				"open_size": [
+					100,
+					140
+				],
+				"placeholder": {
+					"kind": "lines"
+				}
+			},
+			{
+				"file": "flyer_3.png",
+				"open_size": [
+					100,
+					140
+				],
+				"placeholder": {
+					"kind": "lines"
+				}
+			},
+			{
+				"file": "flyer_4.png",
+				"open_size": [
+					100,
+					140
+				],
+				"placeholder": {
+					"kind": "lines"
+				}
+			}
+		],
+		"goal": {
+			"opened": "flyer_3.png"
+		}
+	},
+	"sticky": {
+		"lines": [
+			"write dex COMMAND"
+		],
+		"paste": true
+	},
+	"replies": {
+		"right": "IT OPENED. I did that. ok you did. WE did. new club flyer says: we fix things by hand."
+	}
+}

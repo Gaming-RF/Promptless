@@ -27,3 +27,8 @@ func setup(path: String, lines: Array, open_size: Vector2) -> void:
 
 func set_text_size(px: int) -> void:
 	body.add_theme_font_size_override("normal_font_size", px)
+
+
+func append_line(t: String) -> void:
+	body.text += ("\n" if body.text != "" else "") + t
+	body.scroll_to_line.call_deferred(body.get_line_count() - 1)

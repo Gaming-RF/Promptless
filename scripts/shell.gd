@@ -1,48 +1,4 @@
-extends RefCounted
-
-const VFS = preload("res://scripts/vfs.gd")
-const COMMANDS := ["cd", "chmod", "cp", "grep", "kill", "ls", "man", "open", "sort", "su", "sudo", "unzip"]
-const COURTESY := ["alias", "cat", "clear", "echo", "exit", "head", "help", "history", "less", "mv", "ps", "pwd", "whoami"]
-
-var job: Dictionary
-var fs
-var cwd := "/"
-var history: Array = []
-var pending := {}
-var user_stack: Array = []
-var _token_re := RegEx.new()
-
-
-func _init(j: Dictionary) -> void:
-	job = j
-	fs = VFS.new(job)
-	cwd = job.folder
-	_token_re.compile("\"([^\"]*)\"|'([^']*)'|(\\S+)")
-
-
-func add_job(j: Dictionary) -> void:
-	fs.add_job(j)
-
-
-func files() -> Array:
-	return fs.children(cwd)
-
-
-func new_result() -> Dictionary:
-	return {"out": [], "hint": [], "open": "", "clear": false, "kill": 0, "launch": {}, "ask": "", "ran": {}}
-
-
-func prompt() -> String:
-	if fs.user == "root":
-		return "#"
-	if fs.user == fs.home.get_file():
-		return job.shell.prompt
-	return "%s%s" % [fs.user, job.shell.prompt]
-
-
-func users() -> Dictionary:
-	return job.get("users", {})
-
+extends "res://scripts/shell_core.gd"
 
 func run(line: String, programs: Array = []) -> Dictionary:
 	if not pending.is_empty():
@@ -55,7 +11,9 @@ func run(line: String, programs: Array = []) -> Dictionary:
 	if "|" in line or ">" in line:
 		res.out.append(job.shell.pipes)
 		return res
-	var args := tokenize(line)
+	var args := expand(tokenize_marked(line))
+	if args.is_empty():
+		return res
 	var cmd: String = args.pop_front()
 	_dispatch(cmd, args, res, programs)
 	return res
@@ -76,6 +34,13 @@ func _dispatch(cmd: String, args: Array, res: Dictionary, programs: Array) -> vo
 			_sudo(args, res)
 		"whoami":
 			res.out.append(fs.user)
+		"write":
+			if args.size() < 2:
+				res.out.append(job.shell.get("write_usage", "usage: write USER COMMAND"))
+			elif String(job.get("remote", {}).get("user", "")) != args[0]:
+				res.out.append("write: %s is not logged in" % args[0])
+			else:
+				res.write = {"user": args[0], "line": " ".join(args.slice(1))}
 		"exit":
 			if user_stack.is_empty():
 				res.out.append(job.shell.exit_last)
@@ -134,101 +99,6 @@ func _dispatch(cmd: String, args: Array, res: Dictionary, programs: Array) -> vo
 				res.out.append(job.shell.did_you_mean_cmd.format({"cmd": cmd, "s": s}))
 			else:
 				res.out.append(job.shell.unknown.format({"cmd": cmd}))
-
-
-func complete(line: String) -> Dictionary:
-	var cut := line.rfind(" ")
-	var head := line.substr(0, cut + 1)
-	var word := line.substr(cut + 1)
-	var dir_part := ""
-	var partial := word
-	var pool: Array
-	if cut == -1:
-		pool = COMMANDS + COURTESY
-	else:
-		var slash := word.rfind("/")
-		if slash != -1:
-			dir_part = word.substr(0, slash + 1)
-			partial = word.substr(slash + 1)
-		var dir: String = fs.absolute(cwd, dir_part) if dir_part != "" else cwd
-		pool = fs.children(dir, partial.begins_with("."))
-		pool = pool.map(func(n): return n + "/" if fs.is_dir(fs.absolute(dir, n)) else n)
-	var matches: Array = pool.filter(func(n): return n.begins_with(partial))
-	if matches.is_empty():
-		return {"line": line, "options": []}
-	if matches.size() == 1:
-		var m: String = matches[0]
-		return {"line": head + dir_part + m + ("" if m.ends_with("/") else " "), "options": []}
-	var prefix: String = matches[0]
-	for m in matches:
-		while not m.begins_with(prefix):
-			prefix = prefix.left(-1)
-	return {"line": head + dir_part + prefix, "options": matches if prefix == partial else []}
-
-
-func tokenize(line: String) -> Array:
-	var out: Array = []
-	for m in _token_re.search_all(line):
-		for g in [1, 2, 3]:
-			if m.get_start(g) != -1:
-				out.append(m.get_string(g))
-				break
-	return out
-
-
-func resolve(name: String) -> String:
-	var path: String = fs.absolute(cwd, name)
-	return path if fs.exists(path) else ""
-
-
-func suggest_file(typed: String) -> String:
-	var norm := typed.strip_edges().replace(" ", "_").to_lower()
-	for f in files():
-		if f.to_lower() == norm or f.get_basename().to_lower() == norm:
-			return f
-	var bases: Array = files().map(func(f): return f.get_basename())
-	var s := closest(norm, files(), 3)
-	if s == "":
-		var b := closest(norm, bases, 2)
-		if b != "":
-			s = files()[bases.find(b)]
-	return s
-
-
-static func closest(word: String, pool: Array, max_dist: int) -> String:
-	var best := ""
-	var best_d := max_dist + 1
-	for p in pool:
-		var d := distance(word.to_lower(), p.to_lower())
-		if d < best_d:
-			best = p
-			best_d = d
-	return best
-
-
-static func distance(a: String, b: String) -> int:
-	var d: Array = []
-	for i in a.length() + 1:
-		var row: Array = []
-		row.resize(b.length() + 1)
-		row[0] = i
-		d.append(row)
-	for j in b.length() + 1:
-		d[0][j] = j
-	for i in range(1, a.length() + 1):
-		for j in range(1, b.length() + 1):
-			var cost := int(a[i - 1] != b[j - 1])
-			d[i][j] = mini(mini(d[i - 1][j] + 1, d[i][j - 1] + 1), d[i - 1][j - 1] + cost)
-			if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
-				d[i][j] = mini(d[i][j], d[i - 2][j - 2] + 1)
-	return d[a.length()][b.length()]
-
-
-func _missing(cmd: String, typed: String, res: Dictionary, whole := "") -> void:
-	res.out.append("%s: %s: No such file or directory" % [cmd, typed])
-	var s := suggest_file(whole if whole != "" else typed)
-	if s != "":
-		res.hint.append(job.shell.did_you_mean_file.format({"s": s}))
 
 
 func _ls(args: Array, res: Dictionary) -> void:
@@ -501,7 +371,7 @@ func _exec(cmd: String, res: Dictionary) -> void:
 		elif n.has("opens"):
 			target = n.opens if String(n.opens).begins_with("/") else job.folder + "/" + n.opens
 		if target != "":
-			res.launch = {"path": target, "count": 1 + int(n.get("copies", 0))}
+			res.launch = {"path": target, "count": 1 + int(n.get("copies", 0)), "parent": String(n.get("parent", ""))}
 
 
 func _sort(args: Array, res: Dictionary) -> void:

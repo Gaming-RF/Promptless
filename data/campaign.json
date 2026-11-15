@@ -126,8 +126,9 @@
 				"kill": [
 					"KILL(1)",
 					"  kill PID",
-					"  Stop a program. Every window shows",
-					"  its number in the title bar. See ps."
+					"  Stop a program. Windows show their",
+					"  number in the title bar. Programs",
+					"  without windows only show in ps."
 				],
 				"sort": [
 					"SORT(1)",
@@ -153,6 +154,12 @@
 					"  Run one command as administrator.",
 					"  Asks for YOUR password, and only works",
 					"  for users who are allowed."
+				],
+				"write": [
+					"WRITE(1)",
+					"  write USER COMMAND",
+					"  Send a line to USER's terminal.",
+					"  Their machine runs it exactly as typed."
 				]
 			},
 			"cp_usage": "usage: cp FILE DEST",
@@ -172,7 +179,10 @@
 			"sudo_wrong": "sudo: 1 incorrect password attempt",
 			"sudo_denied": "{user} is not in the sudoers file. This incident will be reported.",
 			"exit_last": "exit: nowhere to go. this is the only computer that still works.",
-			"more_files": "new mail. more files in {folder}"
+			"more_files": "new mail. more files in {folder}",
+			"respawn": "{cmd}: a window closed. drawing another.",
+			"snap_empty": "snapshot: no picture window fully inside that rectangle",
+			"write_usage": "usage: write USER COMMAND"
 		},
 		"ui": {
 			"attach_none": "attach: none (use SNAP)",
@@ -184,7 +194,10 @@
 			"music_off": "radio: off",
 			"text_big": "text: big",
 			"text_normal": "text: normal",
-			"clock": "time {t}"
+			"clock": "time {t}",
+			"snapshot_tool": "SNAPSHOT",
+			"remote_title": "{user}'s screen",
+			"remote_opened": "[{file} opens on his screen]"
 		},
 		"home": "/home/you",
 		"users": {

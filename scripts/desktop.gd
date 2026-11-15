@@ -1,58 +1,4 @@
-extends Control
-
-signal job_won(reply)
-signal changed
-
-const Palette = preload("res://scripts/palette.gd")
-const UI = preload("res://scripts/ui.gd")
-const JobData = preload("res://scripts/job_data.gd")
-const Shell = preload("res://scripts/shell.gd")
-const Judge = preload("res://scripts/judge.gd")
-const DeskWindow = preload("res://scripts/desk_window.gd")
-const PictureWindow = preload("res://scripts/picture_window.gd")
-const TerminalWindow = preload("res://scripts/terminal_window.gd")
-const EmailWindow = preload("res://scripts/email_window.gd")
-const TextWindow = preload("res://scripts/text_window.gd")
-const StickyWindow = preload("res://scripts/sticky_window.gd")
-
-const EMAIL_POS := Vector2(8, 8)
-
-var job: Dictionary
-var initial
-var slots: Array = []
-var cur := 0
-var sfx: Node
-var shell
-var email
-var term
-var pictures := {}
-var texts := {}
-var attachment = null
-var snap_count := 0
-var finished: bool:
-	get:
-		return slots[cur].finished if not slots.is_empty() else false
-	set(v):
-		if not slots.is_empty():
-			slots[cur].finished = v
-var strikes: int:
-	get:
-		return slots[cur].strikes if not slots.is_empty() else 0
-	set(v):
-		if not slots.is_empty():
-			slots[cur].strikes = v
-var base_job: Dictionary:
-	get:
-		return slots[cur].base if not slots.is_empty() else {}
-var _music_btn := Button.new()
-var _text_btn := Button.new()
-var big_text := false
-var sticky
-var _group := {}
-var _next_group := 1
-const SNAP_DIST := 6.0
-const RADIO_PID := 103
-
+extends "res://scripts/desktop_windows.gd"
 
 func setup(j, s: Node) -> void:
 	initial = j
@@ -85,7 +31,9 @@ func _ready() -> void:
 	term.set_pid(101)
 	term.command_entered.connect(run_command)
 	term.tab_requested.connect(_on_tab)
-	term.escape_pressed.connect(select_next_picture)
+	term.escape_pressed.connect(func():
+		key_mode = true
+		select_next_picture())
 	term.typed.connect(func(): sfx.play("type"))
 	term.focused.connect(_focus)
 
@@ -94,6 +42,10 @@ func _ready() -> void:
 	sticky.focused.connect(_focus)
 	sticky.line_clicked.connect(func(t): term.paste(t))
 	sticky.visible = false
+
+	_snap_btn.focus_mode = FOCUS_NONE
+	_snap_btn.pressed.connect(start_snapshot_tool)
+	add_child(_snap_btn)
 
 	_text_btn.focus_mode = FOCUS_NONE
 	_text_btn.pressed.connect(func(): set_big_text(not big_text))
@@ -111,13 +63,14 @@ func load_job(j: Dictionary, avoid := "", force := "") -> void:
 	load_jobs([j], [force], avoid)
 
 
-func load_jobs(list: Array, forces: Array = [], avoid := "") -> void:
+func load_jobs(list: Array, forces: Array = [], avoid := "", file_mail := true) -> void:
 	slots = []
 	for i in list.size():
 		var f: String = forces[i] if i < forces.size() else ""
 		slots.append({"base": list[i], "job": JobData.instantiate(list[i], avoid, f),
 			"strikes": 0, "finished": false, "replies": []})
 	cur = 0
+	ending = ""
 	job = slots[0].job
 	var old_history: Array = shell.history if shell else []
 	var old_home: Dictionary = shell.fs.export_under(shell.fs.home) if shell else {}
@@ -133,9 +86,13 @@ func load_jobs(list: Array, forces: Array = [], avoid := "") -> void:
 		w.queue_free()
 	pictures.clear()
 	_group.clear()
+	daemons.clear()
 	for w in texts.values():
 		w.queue_free()
 	texts.clear()
+	if file_mail:
+		for sl in slots:
+			_file_mail(sl)
 	select_job(0)
 	bounce_in(email, EMAIL_POS)
 	term.print_line(job.shell.welcome.format({"folder": job.folder}), Palette.DIM)
@@ -158,6 +115,7 @@ func select_job(i: int) -> void:
 		email.set_mood("calm")
 	if attachment != null:
 		email.show_attachment(attachment.name)
+	_setup_remote()
 	email.set_inbox(slots.map(func(sl): return sl.job.client.name), cur, slots.map(func(sl): return sl.finished))
 	var note: Dictionary = job.get("sticky", {})
 	sticky.visible = not note.is_empty()
@@ -188,12 +146,6 @@ func restart_slot(i: int, avoid: String) -> void:
 	changed.emit()
 
 
-func bounce_in(w: Control, final_pos: Vector2) -> void:
-	w.position = final_pos - Vector2(0, 28)
-	var t := w.create_tween()
-	t.tween_property(w, "position", final_pos, 0.45).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-
-
 func run_command(line: String) -> void:
 	changed.emit.call_deferred()
 	if shell.pending.is_empty():
@@ -217,221 +169,92 @@ func run_command(line: String) -> void:
 	if r.kill != 0:
 		kill(r.kill)
 	if not r.launch.is_empty():
+		var parent_pid := 0
+		if r.launch.get("parent", "") != "":
+			parent_pid = _next_pid
+			_next_pid += 1
+			daemons[parent_pid] = {"cmd": r.launch.parent, "path": r.launch.path}
 		for i in r.launch.count:
-			open_picture(r.launch.path, true)
+			var lw = open_picture(r.launch.path, true)
+			if parent_pid:
+				lw.set_meta("parent", parent_pid)
+	if not r.write.is_empty():
+		_remote(r.write.line)
 	if not finished and Judge.ran_ok(job, r.ran):
+		ending = job.get("ending", "main")
 		_reply(JobData.pick(job.replies.right, 0))
 		_win(job.replies.right)
 
 
-func running_programs() -> Array:
-	var list: Array = [
-		{"pid": term.pid, "cmd": "sh", "protected": true},
-		{"pid": email.pid, "cmd": "mail", "protected": true},
-	]
-	if sfx.music_on and sfx.music.stream != null:
-		list.append({"pid": RADIO_PID, "cmd": "radio"})
-	for key in pictures:
-		var w = pictures[key]
-		list.append({"pid": w.pid, "cmd": "%s %s" % [job.shell.viewer, w.file.get_file()]})
-	for key in texts:
-		list.append({"pid": texts[key].pid, "cmd": "%s %s" % [job.shell.get("text_viewer", "textview"), key.get_file()]})
-	return list
-
-
-func open_text(path: String):
-	if texts.has(path):
-		_focus(texts[path], false)
-		return texts[path]
-	var w = TextWindow.new()
-	add_child(w)
-	w.setup(path, shell.fs.node(path).lines, Vector2(150, 130))
-	w.position = Vector2(326 + 12 * (texts.size() % 4), 196 + 8 * (texts.size() % 4))
-	w.keep_on_screen()
-	bounce_in(w, w.position)
-	w.focused.connect(_focus)
-	w.set_pid(_next_pid)
-	_next_pid += 1
-	texts[path] = w
-	if big_text:
-		w.set_text_size(UI.FONT_SIZE * 2)
-	_focus(w, false)
-	return w
-
-
-func kill(pid: int) -> void:
-	if pid == RADIO_PID:
-		if sfx.music_on:
-			_toggle_music()
+func _setup_remote() -> void:
+	if remote_screen:
+		remote_screen.queue_free()
+		remote_screen = null
+	remote_shell = null
+	if job.get("check", "") != "remote":
 		return
-	for key in texts.keys():
-		if texts[key].pid == pid:
-			texts[key].queue_free()
-			texts.erase(key)
-			return
-	for key in pictures.keys():
-		if pictures[key].pid == pid:
-			_group.erase(pictures[key])
-			pictures[key].queue_free()
-			pictures.erase(key)
-			return
-
-
-func has_tool(t: String) -> bool:
-	return t in job.get("tools", [])
-
-
-func group_of(w) -> Array:
-	if not _group.has(w):
-		return [w]
-	var g: int = _group[w]
-	return pictures.values().filter(func(o): return _group.get(o, -1) == g)
-
-
-func _on_window_moved(w, delta: Vector2) -> void:
-	for o in group_of(w):
-		if o != w:
-			o.position += delta
-
-
-func _on_drag_finished(w) -> void:
-	changed.emit()
-	if has_tool("join"):
-		try_join(w)
-
-
-func try_join(w) -> bool:
-	var mine := group_of(w)
-	for o in pictures.values():
-		if o in mine:
-			continue
-		var a: Rect2 = w.get_rect()
-		var b: Rect2 = o.get_rect()
-		var offset := Vector2.INF
-		var overlap_y := a.position.y < b.end.y and b.position.y < a.end.y
-		var overlap_x := a.position.x < b.end.x and b.position.x < a.end.x
-		if overlap_y and absf(a.end.x - b.position.x) <= SNAP_DIST:
-			offset = Vector2(b.position.x - a.end.x, 0)
-		elif overlap_y and absf(b.end.x - a.position.x) <= SNAP_DIST:
-			offset = Vector2(b.end.x - a.position.x, 0)
-		elif overlap_x and absf(a.end.y - b.position.y) <= SNAP_DIST:
-			offset = Vector2(0, b.position.y - a.end.y)
-		elif overlap_x and absf(b.end.y - a.position.y) <= SNAP_DIST:
-			offset = Vector2(0, b.end.y - a.position.y)
-		if offset == Vector2.INF:
-			continue
-		if offset.x != 0 and absf(a.position.y - b.position.y) <= SNAP_DIST:
-			offset.y = b.position.y - a.position.y
-		elif offset.y != 0 and absf(a.position.x - b.position.x) <= SNAP_DIST:
-			offset.x = b.position.x - a.position.x
-		for m in mine:
-			m.position += offset
-		var g: int = _group.get(o, 0)
-		if g == 0:
-			g = _next_group
-			_next_group += 1
-		for m in mine + group_of(o):
-			_group[m] = g
-		return true
-	return false
-
-
-func capture(w) -> Array:
-	var taken: Array = group_of(w).duplicate()
-	if has_tool("trace"):
-		var grew := true
-		while grew:
-			grew = false
-			for o in pictures.values():
-				if o in taken:
-					continue
-				for t in taken:
-					if (o.tracing or t.tracing) and o.get_rect().intersects(t.get_rect()):
-						taken.append(o)
-						grew = true
-						break
-	return taken
-
-
-var _next_pid := 140
-
-
-func picture(name: String):
-	var path: String = shell.fs.absolute(shell.cwd, name)
-	if pictures.has(path):
-		return pictures[path]
-	for p in pictures:
-		if pictures[p].file.get_file() == name:
-			return pictures[p]
-	return null
-
-
-func open_picture(file: String, extra_copy := false, animate := true):
-	if pictures.has(file) and not extra_copy:
-		_focus(pictures[file], false)
-		return pictures[file]
-	var info: Dictionary = shell.fs.node(file)
-	var w = PictureWindow.new()
-	add_child(w)
-	var k := pictures.size() % 6
-	var tex: Texture2D = UI.find([info.get("asset", "")])
-	w.setup(file, tex, JobData.picture_index(job, file.get_file()),
-		Vector2(info.open_size[0], info.open_size[1]), job.ui.snap, info.get("placeholder", {}))
-	w.position = Vector2(326 + 18 * k, 10 + 14 * k)
-	w.keep_on_screen()
-	if animate:
-		bounce_in(w, w.position)
-	w.focused.connect(_focus)
-	w.snapshot_requested.connect(snapshot)
-	w.moved.connect(_on_window_moved)
-	w.resized.connect(func(): changed.emit())
-	w.drag_finished.connect(_on_drag_finished)
-	if has_tool("trace"):
-		w.enable_trace(job.ui.get("trace", "TRACE"), job.ui.get("tracing", "TRACING"))
-	w.set_pid(_next_pid)
+	var r: Dictionary = job.remote
+	var rj := job.duplicate(true)
+	rj.folder = r.folder
+	rj.home = r.folder
+	rj.texts = r.get("texts", {})
+	rj.pictures = r.get("pictures", [])
+	rj.extra_files = r.get("extra_files", [])
+	rj.users = {}
+	rj.tools = []
+	remote_shell = Shell.new(rj)
+	remote_screen = TextWindow.new()
+	add_child(remote_screen)
+	remote_screen.setup(r.folder + "/" + job.ui.get("remote_title", "screen"), [], Vector2(200, 120))
+	remote_screen.set_title(job.ui.get("remote_title", "{user}'s screen").format({"user": r.user}))
+	remote_screen.position = Vector2(326, 12)
+	remote_screen.focused.connect(_focus)
+	remote_screen.set_pid(_next_pid)
 	_next_pid += 1
-	pictures[file if not pictures.has(file) else "%s#%d" % [file, w.pid]] = w
-	_focus(w, false)
-	return w
 
 
-func snapshot(w) -> void:
-	snap_count += 1
-	var s: Vector2 = w.get_content_size()
-	var wins: Array = []
-	for c in capture(w):
-		var cs: Vector2 = c.get_content_size()
-		var cp: Vector2 = c.position + c.content.position
-		wins.append({
-			"file": c.file, "w": cs.x, "h": cs.y, "x": cp.x, "y": cp.y,
-			"z": c.get_index(), "tracing": c.tracing, "group": _group.get(c, 0),
-			"copies": pictures.values().filter(func(o): return o.file == c.file).size(),
-		})
-	var joined := wins.filter(func(e): return e.group != 0 and e.group == _group.get(w, -1))
-	joined.sort_custom(func(a, b): return a.x < b.x if absf(a.x - b.x) > SNAP_DIST else a.y < b.y)
-	attachment = {
-		"name": "snapshot_%d.png" % snap_count,
-		"windows": wins,
-		"order": joined.map(func(e): return e.file),
-	}
-	shell.fs.add_file(shell.fs.home + "/" + attachment.name, {
-		"type": "picture",
-		"open_size": [s.x, s.y],
-		"asset": shell.fs.node(w.file).get("asset", ""),
-		"placeholder": shell.fs.node(w.file).get("placeholder", {}),
-	})
-	w.flash()
-	email.show_attachment(attachment.name)
-	changed.emit()
+func _remote(line: String) -> void:
+	if remote_shell == null:
+		return
+	remote_screen.append_line("%s$ %s" % [job.remote.user, line])
+	var rr: Dictionary = remote_shell.run(line)
+	for l in rr.out + rr.hint:
+		remote_screen.append_line(l)
+	if rr.open != "":
+		remote_screen.append_line(job.ui.get("remote_opened", "[{file} opens on his screen]").format({"file": rr.open.get_file()}))
+	if not finished and Judge.remote_ok(job, rr.open):
+		_reply(JobData.pick(job.replies.right, 0))
+		_win(job.replies.right)
+
+
+func _file_mail(sl: Dictionary) -> void:
+	var dir: String = shell.fs.home + "/mail"
+	var j: Dictionary = sl.job
+	var stem := String(j.client.name).split(" ")[0].to_lower()
+	var n: int = shell.fs.children(dir).size() + 1 if shell.fs.is_dir(dir) else 1
+	sl.mail_path = "%s/%02d_%s.txt" % [dir, n, stem]
+	var lines: Array = ["From: " + j.email.from, "Subject: " + j.email.subject, ""]
+	lines.append_array(String(j.email.body).split("\n"))
+	shell.fs.add_file(sl.mail_path, {"type": "text", "lines": lines})
 
 
 func _reply(text: String) -> void:
 	slots[cur].replies.append(text)
 	email.add_reply(text)
+	var path: String = slots[cur].get("mail_path", "")
+	if path != "" and shell.fs.exists(path):
+		var lines: Array = shell.fs.node(path).lines
+		lines.append_array(["", "Re: " + job.email.subject, text])
 
 
 func send() -> void:
 	if finished:
+		return
+	var alt: Dictionary = job.get("alt", {})
+	if attachment == null and alt.get("on", "") == "send_empty":
+		ending = alt.get("ending", "alt")
+		_reply(JobData.pick(alt.reply, 0))
+		_win(alt.reply)
 		return
 	var v: String = Judge.verdict(attachment, job)
 	var reply: String = JobData.pick(job.replies[v], strikes)
@@ -504,72 +327,9 @@ func _update_music_btn() -> void:
 	_text_btn.text = job.ui.get("text_big", "text: big") if big_text else job.ui.get("text_normal", "text: normal")
 	_text_btn.reset_size()
 	_text_btn.position = Vector2(_music_btn.position.x - _text_btn.size.x - 4, _music_btn.position.y)
-
-
-func _focus(w, take_keyboard := true) -> void:
-	for c in get_children():
-		if c is DeskWindow:
-			c.active = c == w
-	w.move_to_front()
-	if w is PictureWindow and take_keyboard:
-		get_viewport().gui_release_focus()
-	elif w == term:
-		term.focus_input()
-
-
-func active_picture():
-	for c in get_children():
-		if c is PictureWindow and c.active:
-			return c
-	return null
-
-
-func select_next_picture() -> void:
-	var list: Array = pictures.values()
-	if list.is_empty():
-		return
-	var cur = active_picture()
-	var i := (list.find(cur) + 1) % list.size() if cur != null else list.size() - 1
-	_focus(list[i])
-
-
-func _input(event: InputEvent) -> void:
-	if not (event is InputEventKey and event.pressed):
-		return
-	if get_viewport().gui_get_focus_owner() != null:
-		return
-	var w = active_picture()
-	var dirs := {KEY_LEFT: Vector2.LEFT, KEY_RIGHT: Vector2.RIGHT, KEY_UP: Vector2.UP, KEY_DOWN: Vector2.DOWN}
-	var step := 8.0 if event.shift_pressed else 1.0
-	var handled := true
-	match event.keycode:
-		KEY_TAB:
-			select_next_picture()
-		KEY_ESCAPE:
-			_focus(term)
-		KEY_ENTER, KEY_KP_ENTER:
-			send()
-		KEY_S:
-			if w:
-				snapshot(w)
-		KEY_T:
-			if w and w._trace_btn:
-				w.set_tracing(not w.tracing)
-		_:
-			if w and dirs.has(event.keycode):
-				var d: Vector2 = dirs[event.keycode] * step
-				if event.ctrl_pressed:
-					w.position += d
-					w.keep_on_screen()
-					_on_window_moved(w, d)
-					if has_tool("join"):
-						try_join(w)
-				else:
-					w.set_content_size(w.get_content_size() + d)
-			else:
-				handled = false
-	if handled:
-		get_viewport().set_input_as_handled()
+	_snap_btn.text = job.ui.get("snapshot_tool", "SNAPSHOT")
+	_snap_btn.reset_size()
+	_snap_btn.position = Vector2(_text_btn.position.x - _snap_btn.size.x - 4, _music_btn.position.y)
 
 
 func export_state() -> Dictionary:
@@ -579,7 +339,7 @@ func export_state() -> Dictionary:
 		wins.append({"file": w.file, "x": w.position.x, "y": w.position.y, "w": cs.x, "h": cs.y, "tracing": w.tracing})
 	return {
 		"cur": cur,
-		"slots": slots.map(func(sl): return {"answer": sl.job.answer, "strikes": sl.strikes, "finished": sl.finished, "replies": sl.replies}),
+		"slots": slots.map(func(sl): return {"answer": sl.job.answer, "strikes": sl.strikes, "finished": sl.finished, "replies": sl.replies, "mail_path": sl.get("mail_path", "")}),
 		"snap_count": snap_count,
 		"home": shell.fs.export_under(shell.fs.home),
 		"history": shell.history,
@@ -594,8 +354,9 @@ func export_state() -> Dictionary:
 func import_state(st: Dictionary) -> void:
 	var bases: Array = slots.map(func(sl): return sl.base)
 	var saved: Array = st.get("slots", [])
-	load_jobs(bases, saved.map(func(e): return e.get("answer", "")))
+	load_jobs(bases, saved.map(func(e): return e.get("answer", "")), "", saved.is_empty())
 	for i in mini(saved.size(), slots.size()):
+		slots[i].mail_path = saved[i].get("mail_path", "")
 		slots[i].strikes = int(saved[i].get("strikes", 0))
 		slots[i].finished = saved[i].get("finished", false)
 		slots[i].replies = saved[i].get("replies", [])

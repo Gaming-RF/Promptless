@@ -1,0 +1,45 @@
+{
+	"folder": "/clients/dex/buspass",
+	"email": {
+		"from": "Dex",
+		"subject": "is this the computer place??",
+		"body": "hi. the bus app says it needs my ID photo and the photo bot is dead. my roommate said you fix things. the photo is in your machine now?? try ls then open id_photo.png then SNAP and send.\n\nDex",
+		"clickable": [
+			"ls",
+			"open id_photo.png"
+		]
+	},
+	"texts": {},
+	"pictures": [
+		{
+			"file": "id_photo.png",
+			"open_size": [
+				120,
+				120
+			],
+			"placeholder": {
+				"kind": "half",
+				"side": "left"
+			}
+		}
+	],
+	"answer": "id_photo.png",
+	"target": {
+		"w": 120,
+		"h": 120,
+		"tolerance": 6
+	},
+	"sticky": {
+		"lines": [
+			"ls",
+			"open FILE"
+		],
+		"paste": true
+	},
+	"replies": {
+		"right": "bus pass WORKS. you're a wizard. putting your flyer on the fridge.",
+		"wrong_file": "that's not me??",
+		"wrong_shape": "why is my face like that",
+		"wrong_size": "too small??"
+	}
+}
