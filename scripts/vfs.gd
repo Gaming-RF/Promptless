@@ -30,6 +30,7 @@ func add_job(job: Dictionary) -> void:
 			"type": "picture",
 			"open_size": p.open_size,
 			"asset": p.get("asset", job.picture_dir + p.file),
+			"placeholder": p.get("placeholder", {}),
 		})
 	for f in job.get("extra_files", []):
 		var path: String = f.path if f.path.begins_with("/") else job.folder + "/" + f.path

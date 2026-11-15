@@ -1,0 +1,118 @@
+{
+	"client": {
+		"name": "Marguerite",
+		"portrait_calm": "res://assets/marguerite_calm.png",
+		"portrait_panic": "res://assets/marguerite_panic.png"
+	},
+	"folder": "/clients/marguerite",
+	"email": {
+		"from": "Marguerite",
+		"subject": "apology. urgent.",
+		"body": "Write an apology to Priyanka. I don't know what I did. My assistant handled feelings. Everything I sent is in sent_mail.txt. I'm told grep finds names. Do whatever the files say. Do not call me.\n\n- M.",
+		"clickable": []
+	},
+	"search_word": "Priyanka",
+	"texts": {
+		"sent_mail.txt": [
+			"To: Board - Re: Q3 numbers. Fine.",
+			"To: Dev - stop cc'ing me",
+			"To: Facilities - the plant is dying. Fix it.",
+			"To: Legal - no.",
+			"To: All staff - Friday is NOT casual",
+			"To: Assistant - (no reply. it's gone)",
+			"To: Raj - see me",
+			"To: Finance - why is there a line called 'snacks'",
+			"To: Board - yes.",
+			"To: Raj - never mind",
+			"To: Priyanka - Q3 memo is memo.png. My honest note is on note.png, the tracing sheet. It goes over the memo.",
+			"To: IT - the computers are fine, it's the people",
+			"To: Marketing - make it pop",
+			"To: Marketing - less pop",
+			"To: Board - see attached (nothing attached)",
+			"To: Assistant - hello?",
+			"To: Facilities - the plant died",
+			"To: Dev - stop replying all",
+			"To: HR - what is 'tone'",
+			"To: All staff - well done, I suppose"
+		]
+	},
+	"pictures": [
+		{
+			"file": "memo.png",
+			"open_size": [
+				160,
+				140
+			],
+			"placeholder": {
+				"kind": "lines"
+			}
+		},
+		{
+			"file": "note.png",
+			"open_size": [
+				160,
+				140
+			],
+			"placeholder": {
+				"kind": "mark",
+				"row": 2
+			}
+		},
+		{
+			"file": "memo_q2.png",
+			"open_size": [
+				160,
+				140
+			],
+			"placeholder": {
+				"kind": "lines"
+			}
+		},
+		{
+			"file": "note_q2.png",
+			"open_size": [
+				160,
+				140
+			],
+			"placeholder": {
+				"kind": "mark",
+				"row": 5
+			}
+		}
+	],
+	"answer": "note.png",
+	"target": {
+		"w": 160,
+		"h": 140,
+		"tolerance": 6
+	},
+	"check": "overlay",
+	"overlay": {
+		"top": "note.png",
+		"under": "memo.png",
+		"align": 6
+	},
+	"tools": [
+		"trace",
+		"textview"
+	],
+	"sticky": {
+		"lines": [
+			"grep WORD FILE",
+			"open FILE",
+			"ls"
+		],
+		"paste": true
+	},
+	"replies": {
+		"right": "Forwarded. She wrote back 'thank you. finally.' I still don't know what I did. Invoice me.",
+		"wrong_file": [
+			"That is not the Priyanka memo.",
+			"Wrong memo. Again."
+		],
+		"wrong_shape": [
+			"That's two pictures. I need one apology.",
+			"Line them up. Exactly."
+		]
+	}
+}

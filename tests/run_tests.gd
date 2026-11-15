@@ -21,46 +21,60 @@ func words(t: String) -> int:
 	return t.split(" ", false).size()
 
 
+func reply_words_ok(r) -> bool:
+	if r is Array:
+		return r.all(func(x): return words(x) < 30)
+	return words(r) < 30
+
+
 func check_job_data(job: Dictionary) -> void:
 	var tag: String = "[%s] " % job.folder
-	var word: String = job.search_word
-	var hits := 0
-	for f in job.texts:
-		for l in job.texts[f]:
-			if l.contains(word):
-				hits += 1
-	check(hits == 1, tag + "exactly one text line contains '%s' (found %d)" % [word, hits])
-	check(job.email.body.contains(word), tag + "email spells the search word the same way")
+	var kind: String = job.get("check", "stretch")
+	if job.has("search_word"):
+		var word: String = job.search_word
+		var hits := 0
+		for f in job.texts:
+			for l in job.texts[f]:
+				if l.contains(word):
+					hits += 1
+		check(hits == 1, tag + "exactly one text line contains '%s' (found %d)" % [word, hits])
+		check(job.email.body.contains(word), tag + "email spells the search word the same way")
 	check(words(job.email.body) < 60, tag + "email under 60 words (%d)" % words(job.email.body))
-	for k in ["right", "wrong_file", "wrong_shape", "wrong_size", "no_attachment"]:
-		check(job.replies.has(k) and words(job.replies[k]) < 30, tag + "reply '%s' exists, under 30 words" % k)
+	var need: Array = ["right", "no_attachment"]
+	if kind in ["stretch", "overlay", "join"]:
+		need += ["wrong_file", "wrong_shape"]
+	if kind == "stretch":
+		need.append("wrong_size")
+	if job.get("single", false):
+		need.append("crowded")
+	if job.has("strikes"):
+		need.append("give_up")
+	for k in need:
+		check(job.replies.has(k) and reply_words_ok(job.replies[k]), tag + "reply '%s' exists, under 30 words" % k)
+	if kind != "stretch" or job.pictures.is_empty():
+		return
 	var t: Dictionary = job.target
 	for p in job.pictures:
 		var sz: Array = p.open_size
 		check(absf(sz[0] - t.w) <= t.tolerance or absf(sz[1] - t.h) <= t.tolerance,
 			tag + "%s opens with one side at target" % p.file)
-	var answer_ok := false
-	for p in job.pictures:
-		answer_ok = answer_ok or p.file == job.answer
-	check(answer_ok, tag + "answer file exists")
-	var sh = Shell.new(job)
+	var j := JobData.instantiate(job)
+	var sh = Shell.new(j)
 	var key_line := ""
-	for f in job.texts:
-		var r: Dictionary = sh.run("grep %s %s" % [word, f])
+	for f in j.texts:
+		var r: Dictionary = sh.run("grep %s %s" % [j.search_word, f])
 		if r.out.size() == 1:
 			key_line = r.out[0]
-	var n: int = String(job.answer).get_basename().get_slice("_", 1).to_int()
+	var n: int = String(j.answer).get_basename().get_slice("_", 1).to_int()
 	check(key_line != "" and key_line.contains(str(n)), tag + "grep line names the answer number")
 	var w: float = t.w
 	var h: float = t.h
-	check(Judge.verdict(rec(job.answer, w, h), job) == "right", tag + "target size wins")
-	check(Judge.verdict(rec(job.answer, w - t.tolerance, h + t.tolerance), job) == "right", tag + "edge of tolerance wins")
-	check(Judge.verdict(rec(job.answer, w - t.tolerance - 1, h), job) == "wrong_shape", tag + "just outside tolerance = egg")
-	check(Judge.verdict(rec(job.answer, 100, 100), job) == "wrong_size", tag + "round but too small = wrong size")
-	check(Judge.verdict(rec(job.answer, w + 20, h + 20), job) == "wrong_size", tag + "round but too big = wrong size")
-	check(Judge.verdict(rec(job.answer, 100, h), job) == "wrong_shape", tag + "squashed = egg, not wrong size")
-	var other: String = job.pictures[0].file if job.pictures[0].file != job.answer else job.pictures[1].file
-	check(Judge.verdict(rec(other, w, h), job) == "wrong_file", tag + "wrong picture at target = wrong file")
+	check(Judge.verdict(rec(j.answer, w, h), j) == "right", tag + "target size wins")
+	check(Judge.verdict(rec(j.answer, w - t.tolerance, h + t.tolerance), j) == "right", tag + "edge of tolerance wins")
+	check(Judge.verdict(rec(j.answer, w - t.tolerance - 1, h), j) == "wrong_shape", tag + "just outside tolerance = egg")
+	check(Judge.verdict(rec(j.answer, 100, 100), j) == "wrong_size", tag + "round but too small = wrong size")
+	var other: String = j.pictures[0].file if j.pictures[0].file != j.answer else j.pictures[1].file
+	check(Judge.verdict(rec(other, w, h), j) == "wrong_file", tag + "wrong picture at target = wrong file")
 
 
 func check_file_system(base: Dictionary) -> void:
@@ -472,6 +486,121 @@ func check_replays() -> void:
 	m.queue_free()
 
 
+func say(m, cmd: String) -> void:
+	m.current.run_command(cmd)
+
+
+func win_wait(m, idx: int) -> void:
+	await create_timer(2.4).timeout
+	check(m.job_index == idx + 1 or m.current.get_script().resource_path.ends_with("end_screen.gd"), "full: job %d won and the next one loaded" % (idx + 1))
+
+
+func check_full_campaign() -> void:
+	var fc := JobData.load_campaign("res://data/full/campaign.json")
+	check(fc.jobs.size() == 6 and fc.title == "Promptless" and fc.defaults.shell.has("man"), "full: campaign extends the jam defaults")
+	for j in fc.jobs:
+		check_job_data(j)
+	var m = load("res://scenes/main.tscn").instantiate()
+	root.add_child(m)
+	await process_frame
+	m.campaign = fc
+	m.campaign.save = false
+	m.start_game(false)
+	await process_frame
+	var d = m.current
+	var lake: Dictionary = d.job
+	say(m, "grep Orrin notes.txt")
+	var n := String(lake.answer).get_basename().get_slice("_", 1).to_int()
+	check(d.term.output.get_parsed_text().contains("Lake Orrin = map %d." % n), "lake: grep names the map")
+	var mw = d.open_picture(lake.folder + "/" + lake.answer)
+	mw.set_content_size(Vector2(160, 160))
+	d.snapshot(mw)
+	d.send()
+	await win_wait(m, 0)
+
+	d = m.current
+	say(m, "grep Priyanka sent_mail.txt")
+	var memo = d.open_picture("/clients/marguerite/memo.png")
+	var note = d.open_picture("/clients/marguerite/note.png")
+	note.position = memo.position
+	note.set_tracing(true)
+	d.snapshot(note)
+	d.send()
+	check(d.email.last_reply.begins_with("Forwarded"), "marguerite: traced note over memo wins")
+	await win_wait(m, 1)
+
+	d = m.current
+	say(m, "cd /clients/okafor")
+	check(d.shell.run("ls").out.is_empty() and d.shell.run("ls -a").out[0].contains(".album"), "okafor: folder looks empty until ls -a")
+	say(m, "cd .album")
+	say(m, "open faded_1.png")
+	say(m, "open faded_2.png")
+	var f1 = d.picture("faded_1.png")
+	var f2 = d.picture("faded_2.png")
+	f1.position = f2.position
+	f1.set_tracing(true)
+	f1.move_to_front()
+	d.snapshot(f1)
+	d.send()
+	check(d.email.last_reply.begins_with("Both of us"), "okafor: either copy on top works")
+	await win_wait(m, 2)
+
+	d = m.current
+	say(m, "chmod +x chart.sh")
+	check(d.term.output.get_parsed_text().contains("Operation not permitted"), "tobi: can't chmod his file")
+	say(m, "cp chart.sh ~")
+	say(m, "cd ~")
+	say(m, "./chart.sh")
+	check(d.pictures.is_empty(), "tobi: copy isn't runnable yet")
+	say(m, "chmod +x chart.sh")
+	say(m, "./chart.sh")
+	await process_frame
+	check(d.pictures.size() == 4 and d.shell.fs.exists("/home/you/chart.png"), "tobi: script makes the chart and floods 4 windows")
+	var charts: Array = d.pictures.values()
+	charts[0].set_content_size(Vector2(160, 160))
+	d.snapshot(charts[0])
+	d.send()
+	check(d.email.last_reply.begins_with("Why are there four"), "tobi: crowded until the copies are killed")
+	for i in range(1, 4):
+		say(m, "kill %d" % charts[i].pid)
+	d.snapshot(charts[0])
+	d.send()
+	check(d.email.last_reply.begins_with("Looks right"), "tobi: one square chart wins")
+	await win_wait(m, 3)
+
+	d = m.current
+	say(m, "cat ~/mail/ansel_1.txt")
+	say(m, "unzip ledger.zip -d ~")
+	say(m, "1971")
+	check(d.shell.fs.exists("/home/you/ledger/scan_a.png"), "ansel: unzip with the password from his letter")
+	check(d.shell.run("sort -n ~/ledger/index.txt").out[0] == "1 scan_b.png", "ansel: sort -n gives the page order")
+	var pages: Array = []
+	for name in ["scan_b", "scan_d", "scan_c", "scan_a"]:
+		pages.append(d.open_picture("/home/you/ledger/%s.png" % name))
+	pages[0].position = Vector2(330, 120)
+	for i in range(1, 4):
+		pages[i].position = pages[i - 1].position + Vector2(pages[i - 1].size.x + 3, 0)
+		d._on_drag_finished(pages[i])
+	d.snapshot(pages[0])
+	d.send()
+	check(d.email.last_reply.begins_with("Splendid"), "ansel: pages joined in order win")
+	await win_wait(m, 4)
+
+	d = m.current
+	say(m, "cat notes.txt")
+	say(m, "su owner")
+	say(m, "harbor1984")
+	check(d.shell.fs.user == "owner", "owner: su with the pieced-together password")
+	say(m, "./end_drill.sh")
+	check(d.term.output.get_parsed_text().contains("run it as root") and not d.finished, "owner: needs root")
+	say(m, "sudo /home/owner/end_drill.sh")
+	say(m, "harbor1984")
+	check(d.finished and d.email.last_reply.begins_with("So it's done"), "owner: sudo her command ends the drill")
+	await win_wait(m, 5)
+	check(m.current.get_script().resource_path.ends_with("end_screen.gd"), "full: campaign reaches the end screen")
+	m.queue_free()
+
+
 func _initialize() -> void:
 	var c := JobData.load_campaign("res://data/campaign.json")
 	check(c.jobs.size() == 2, "campaign has 2 jobs")
@@ -629,5 +758,6 @@ func _initialize() -> void:
 	check(r2.hint == ["(nothing in that file. Coach keeps his own notes.)"], "job 2 overrides the no-match hint")
 	await check_saving(c.jobs[0])
 	await check_replays()
+	await check_full_campaign()
 	print("\n%d failure(s)" % fails)
 	quit(1 if fails else 0)

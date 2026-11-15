@@ -5,6 +5,9 @@ Two jobs, ~3 minutes. Job 1: read Dex's email -> `grep Comets notes.txt` -> `ope
 same desktop: same pattern, two text files, eight photos, nothing clickable.
 
 - **Run:** `godot --path .` (or F5 in the editor)
+- **Full-game draft:** `godot --path . -- --campaign=res://data/full/campaign.json`
+  (6 jobs from the plan: Lake Orrin, Marguerite, the Okafors, Tobi, Ansel, the previous owner;
+  code-drawn placeholder art until real pictures exist at the same file names; all text is a draft)
 - **Tests:** `godot --headless --path . -s tests/run_tests.gd` (logic + desktop) and
   `godot --headless --path . -s tests/input_test.gd` (real key/mouse events, full 90-second path)
 - **Content:** `data/campaign.json` holds the title, end screen, music, job order and shared

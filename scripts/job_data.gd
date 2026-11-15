@@ -17,6 +17,10 @@ static func load_json(path: String) -> Dictionary:
 
 static func load_campaign(path: String) -> Dictionary:
 	var c := load_json(path)
+	if c.has("extends"):
+		var base := load_json(c.extends)
+		base.erase("jobs")
+		c = merge(base, c)
 	var jobs: Array = []
 	for entry in c.get("jobs", []):
 		if entry is Array:

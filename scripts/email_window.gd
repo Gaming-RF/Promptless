@@ -59,7 +59,10 @@ func build(s: Vector2) -> void:
 
 func show_job(j: Dictionary) -> void:
 	job = j
-	_placeholder.text = job.client.name.to_upper()
+	var initials := ""
+	for part in String(job.client.name).split(" ", false):
+		initials += part.left(1).to_upper()
+	_placeholder.text = initials.left(2)
 	_from.text = "From: " + job.email.from
 	_subj.text = "Subject: " + job.email.subject
 	body.text = _format_body()

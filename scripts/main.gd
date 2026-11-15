@@ -1,6 +1,7 @@
 extends Control
 
 const CAMPAIGN_PATH := "res://data/campaign.json"
+var campaign_path := CAMPAIGN_PATH
 const UI = preload("res://scripts/ui.gd")
 const JobData = preload("res://scripts/job_data.gd")
 const Sfx = preload("res://scripts/sfx.gd")
@@ -22,7 +23,10 @@ var _save_timer := Timer.new()
 
 func _ready() -> void:
 	theme = UI.make_theme()
-	campaign = JobData.load_campaign(CAMPAIGN_PATH)
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--campaign="):
+			campaign_path = a.substr(11)
+	campaign = JobData.load_campaign(campaign_path)
 	sfx = Sfx.new()
 	add_child(sfx)
 	_save_timer.wait_time = 2.0

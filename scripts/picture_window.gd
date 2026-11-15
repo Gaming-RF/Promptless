@@ -14,7 +14,8 @@ var _readout: Label
 var _readout_id := 0
 
 
-func setup(file_name: String, tex: Texture2D, variant: int, open_size: Vector2, snap_text: String) -> void:
+func setup(file_name: String, tex: Texture2D, variant: int, open_size: Vector2, snap_text: String, ph := {}) -> void:
+	view.placeholder = ph
 	file = file_name
 	resizable = true
 	drag_body = true

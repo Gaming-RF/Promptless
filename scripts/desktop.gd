@@ -219,6 +219,9 @@ func run_command(line: String) -> void:
 	if not r.launch.is_empty():
 		for i in r.launch.count:
 			open_picture(r.launch.path, true)
+	if not finished and Judge.ran_ok(job, r.ran):
+		_reply(JobData.pick(job.replies.right, 0))
+		_win(job.replies.right)
 
 
 func running_programs() -> Array:
@@ -373,7 +376,7 @@ func open_picture(file: String, extra_copy := false, animate := true):
 	var k := pictures.size() % 6
 	var tex: Texture2D = UI.find([info.get("asset", "")])
 	w.setup(file, tex, JobData.picture_index(job, file.get_file()),
-		Vector2(info.open_size[0], info.open_size[1]), job.ui.snap)
+		Vector2(info.open_size[0], info.open_size[1]), job.ui.snap, info.get("placeholder", {}))
 	w.position = Vector2(326 + 18 * k, 10 + 14 * k)
 	w.keep_on_screen()
 	if animate:
@@ -402,6 +405,7 @@ func snapshot(w) -> void:
 		wins.append({
 			"file": c.file, "w": cs.x, "h": cs.y, "x": cp.x, "y": cp.y,
 			"z": c.get_index(), "tracing": c.tracing, "group": _group.get(c, 0),
+			"copies": pictures.values().filter(func(o): return o.file == c.file).size(),
 		})
 	var joined := wins.filter(func(e): return e.group != 0 and e.group == _group.get(w, -1))
 	joined.sort_custom(func(a, b): return a.x < b.x if absf(a.x - b.x) > SNAP_DIST else a.y < b.y)
@@ -414,6 +418,7 @@ func snapshot(w) -> void:
 		"type": "picture",
 		"open_size": [s.x, s.y],
 		"asset": shell.fs.node(w.file).get("asset", ""),
+		"placeholder": shell.fs.node(w.file).get("placeholder", {}),
 	})
 	w.flash()
 	email.show_attachment(attachment.name)
@@ -442,22 +447,26 @@ func send() -> void:
 			return
 	_reply(reply)
 	if v == "right":
-		if _clock_start >= 0 and _clock_end < 0:
-			_clock_end = clock_seconds()
-		finished = true
-		email.set_mood("calm")
-		sfx.play("success")
-		attachment = null
-		email.clear_attachment()
-		email.set_inbox(slots.map(func(sl): return sl.job.client.name), cur, slots.map(func(sl): return sl.finished))
-		if slots.all(func(sl): return sl.finished and sl.replies.size() > 0 and not _gave_up(sl)):
-			get_tree().create_timer(2.2).timeout.connect(func(): job_won.emit(reply))
-		changed.emit()
+		_win(reply)
 		return
 	sfx.play("mail")
 	if v != "no_attachment":
 		attachment = null
 		email.clear_attachment()
+
+
+func _win(reply: String) -> void:
+	if _clock_start >= 0 and _clock_end < 0:
+		_clock_end = clock_seconds()
+	finished = true
+	email.set_mood("calm")
+	sfx.play("success")
+	attachment = null
+	email.clear_attachment()
+	email.set_inbox(slots.map(func(sl): return sl.job.client.name), cur, slots.map(func(sl): return sl.finished))
+	if slots.all(func(sl): return sl.finished and sl.replies.size() > 0 and not _gave_up(sl)):
+		get_tree().create_timer(2.2).timeout.connect(func(): job_won.emit(reply))
+	changed.emit()
 
 
 func _gave_up(sl: Dictionary) -> bool:

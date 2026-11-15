@@ -1,0 +1,82 @@
+{
+	"client": {
+		"name": "Ansel",
+		"portrait_calm": "res://assets/ansel_calm.png",
+		"portrait_panic": "res://assets/ansel_panic.png"
+	},
+	"folder": "/home/you/.previous_owner",
+	"email": {
+		"from": "Ansel",
+		"subject": "about your machine",
+		"body": "Dear friend, that hidden folder in your home was hers, I think. Her notes end with a sentence I've read in every outage report. Only her account can end it. Whether to is your choice, not mine.\n\nAnsel",
+		"clickable": []
+	},
+	"users": {
+		"you": {
+			"password": "[your password]",
+			"sudo": false
+		},
+		"owner": {
+			"password": "harbor1984",
+			"sudo": true
+		}
+	},
+	"texts": {
+		"notes.txt": [
+			"[story team: her notes go here]",
+			"first half of my password: harbor",
+			"the second half is the year in my other file",
+			"if ten years pass without anyone switching it off on purpose,",
+			"the assistants switch themselves off. a fire drill.",
+			"it ends when someone who can manage without them decides it should."
+		],
+		"year.txt": [
+			"1984"
+		]
+	},
+	"pictures": [],
+	"extra_files": [
+		{
+			"path": "/home/owner",
+			"type": "dir",
+			"private": true
+		},
+		{
+			"path": "/home/owner/end_drill.sh",
+			"type": "script",
+			"x": true,
+			"needs_root": true,
+			"prints": [
+				"end_drill.sh: signing message...",
+				"end_drill.sh: sent. assistants return by morning."
+			]
+		}
+	],
+	"answer": "notes.txt",
+	"target": {
+		"w": 0,
+		"h": 0,
+		"tolerance": 0
+	},
+	"check": "ran",
+	"ran": {
+		"path": "/home/owner/end_drill.sh",
+		"root": true
+	},
+	"tools": [
+		"textview"
+	],
+	"sticky": {
+		"lines": [
+			"su USER",
+			"sudo COMMAND",
+			"exit"
+		],
+		"paste": false
+	},
+	"replies": {
+		"right": "So it's done. The inbox will go quiet by morning. I'll still write, if that's all right. - A.",
+		"wrong_file": "[unused]",
+		"wrong_shape": "[unused]"
+	}
+}

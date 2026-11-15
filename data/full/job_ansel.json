@@ -1,0 +1,139 @@
+{
+	"client": {
+		"name": "Ansel",
+		"portrait_calm": "res://assets/ansel_calm.png",
+		"portrait_panic": "res://assets/ansel_panic.png"
+	},
+	"folder": "/clients/ansel",
+	"email": {
+		"from": "Ansel",
+		"subject": "Check my working",
+		"body": "Dear friend, would you check my working? The ledger scans are in ledger.zip; the password is in my first letter to you. The index says which page is which. Join them in order, if you'd be so kind. No hurry at all.\n\nAnsel",
+		"clickable": []
+	},
+	"texts": {},
+	"pictures": [],
+	"extra_files": [
+		{
+			"path": "/home/you/mail/ansel_1.txt",
+			"type": "text",
+			"lines": [
+				"Dear neighbour,",
+				"I hear your old machine still works. So does mine:",
+				"a pencil and a ledger.",
+				"For my files I always use the year",
+				"I started at the post office: 1971.",
+				"Warmly, Ansel"
+			]
+		},
+		{
+			"path": "ledger.zip",
+			"type": "archive",
+			"password": "1971",
+			"contents": [
+				{
+					"path": "ledger",
+					"type": "dir"
+				},
+				{
+					"path": "ledger/scan_a.png",
+					"type": "picture",
+					"open_size": [
+						80,
+						110
+					],
+					"placeholder": {
+						"kind": "label",
+						"text": "scan a"
+					}
+				},
+				{
+					"path": "ledger/scan_b.png",
+					"type": "picture",
+					"open_size": [
+						80,
+						110
+					],
+					"placeholder": {
+						"kind": "label",
+						"text": "scan b"
+					}
+				},
+				{
+					"path": "ledger/scan_c.png",
+					"type": "picture",
+					"open_size": [
+						80,
+						110
+					],
+					"placeholder": {
+						"kind": "label",
+						"text": "scan c"
+					}
+				},
+				{
+					"path": "ledger/scan_d.png",
+					"type": "picture",
+					"open_size": [
+						80,
+						110
+					],
+					"placeholder": {
+						"kind": "label",
+						"text": "scan d"
+					}
+				},
+				{
+					"path": "ledger/index.txt",
+					"type": "text",
+					"lines": [
+						"3 scan_c.png",
+						"1 scan_b.png",
+						"4 scan_a.png",
+						"2 scan_d.png"
+					]
+				}
+			]
+		}
+	],
+	"answer": "scan_b.png",
+	"target": {
+		"w": 80,
+		"h": 110,
+		"tolerance": 6
+	},
+	"check": "join",
+	"join": {
+		"order": [
+			"scan_b.png",
+			"scan_d.png",
+			"scan_c.png",
+			"scan_a.png"
+		],
+		"by_name": true
+	},
+	"timed": true,
+	"tools": [
+		"join",
+		"textview"
+	],
+	"sticky": {
+		"lines": [
+			"unzip FILE -d ~",
+			"sort -n FILE",
+			"cat FILE"
+		],
+		"paste": false
+	},
+	"replies": {
+		"right": "Splendid. Your sums agree with mine, which is a relief to us both. Tea on Sunday?",
+		"wrong_file": [
+			"One page seems to be missing, I think.",
+			"Still a page short."
+		],
+		"wrong_shape": [
+			"The pages are out of order, dear.",
+			"Not quite the order yet."
+		]
+	}
+}

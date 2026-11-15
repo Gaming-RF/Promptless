@@ -1,0 +1,14 @@
+{
+	"extends": "res://data/campaign.json",
+	"title": "Promptless",
+	"tagline": "Every AI went dark. Your old computer didn't. (full game draft)",
+	"save": true,
+	"jobs": [
+		"res://data/full/job_lake.json",
+		"res://data/full/job_marguerite.json",
+		"res://data/full/job_okafor.json",
+		"res://data/full/job_tobi.json",
+		"res://data/full/job_ansel.json",
+		"res://data/full/job_owner.json"
+	]
+}

@@ -1,0 +1,234 @@
+{
+	"folder": "/clients/dex",
+	"email": {
+		"from": "Dex",
+		"subject": "HELP due 9am",
+		"body": "My study bot is dead. Geography: 'Attach a map of Lake Orrin at its true shape.' I have a pile of maps and no idea which is which. My roommate says grep finds words in files?? Everything is in /clients/dex. Please.\n\nDex",
+		"clickable": []
+	},
+	"search_word": "Orrin",
+	"texts": {
+		"notes.txt": [
+			"GEOG 101 - notes (messy, sorry future me)",
+			"lecture 1: rivers. they go downhill. mostly",
+			"lecture 2: rocks??",
+			"exam is open book (CHECK THIS)",
+			"maps due friday 9am, attach true shape",
+			"prof hates squashed scans. noted",
+			"Lake Tarn = the long one? or map 3",
+			"map numbers are on the scanner log, not the maps",
+			"compass ring on every map. ignore it unless asked",
+			"coffee: 2 shots, not 3",
+			"group project w/ Sam (Sam does nothing)",
+			"Lake Bel is shallow. or that was a pond",
+			"study bot summaries were always wrong anyway",
+			"read chapter 4 (did not read chapter 4)",
+			"glaciers carve lakes. sounds fake but ok",
+			"scanner squashed everything. again",
+			"the twelve maps all look the same to me",
+			"Lake Mire = map 2 maybe",
+			"borrow ruler from roommate",
+			"roommate knows computers. ask nicely",
+			"lecture 5: deltas. like rivers but tired",
+			"quiz on capitals next week",
+			"pencil not pen for maps",
+			"prof's office hours: never",
+			"lake depth = deep. good answer",
+			"stop drawing faces on the lakes",
+			"map 11 has a coffee stain",
+			"print or attach? ATTACH",
+			"Lake Sorrel = map 9?? ask",
+			"true shape means not stretched. or not squashed. both",
+			"map legend explains symbols",
+			"Lake Orrin = map {answer_n}. Prof says the compass ring is a perfect circle.",
+			"north is up. usually",
+			"field trip cancelled (bus bot dead)",
+			"everything is a bot. was a bot",
+			"lecture 7: weather. it rains",
+			"note to self: breathe",
+			"twelve maps. why twelve",
+			"the lake shapes are all slightly different",
+			"ring should be round on a good map apparently",
+			"library closes at 8",
+			"Sam says hi (Sam still does nothing)",
+			"bring snacks to the exam?",
+			"lecture 8: maps of maps",
+			"scale bar: 1 square = 1 km",
+			"don't trust the old atlas",
+			"grades posted friday",
+			"lake names are in the textbook index",
+			"textbook: lost",
+			"draw the outline first, then label",
+			"contour lines = hills",
+			"the egg-shaped ones are wrong",
+			"roommate says grep. what is grep",
+			"apparently it finds words",
+			"shower thought: lakes are just big puddles",
+			"prof's favourite lake: unknown",
+			"due 9am. it is 2am",
+			"lecture 9: lakes, finally",
+			"(this file is 60 lines of chaos)",
+			"END OF NOTES (probably)"
+		]
+	},
+	"pictures": [
+		{
+			"file": "map_01.png",
+			"open_size": [
+				160,
+				104
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_02.png",
+			"open_size": [
+				124,
+				160
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_03.png",
+			"open_size": [
+				160,
+				120
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_04.png",
+			"open_size": [
+				88,
+				160
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_05.png",
+			"open_size": [
+				160,
+				72
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_06.png",
+			"open_size": [
+				112,
+				160
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_07.png",
+			"open_size": [
+				96,
+				160
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_08.png",
+			"open_size": [
+				160,
+				96
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_09.png",
+			"open_size": [
+				140,
+				160
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_10.png",
+			"open_size": [
+				160,
+				130
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_11.png",
+			"open_size": [
+				80,
+				160
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		},
+		{
+			"file": "map_12.png",
+			"open_size": [
+				160,
+				84
+			],
+			"placeholder": {
+				"kind": "ring"
+			}
+		}
+	],
+	"answer": "map_07.png",
+	"shuffle": true,
+	"strikes": 3,
+	"target": {
+		"w": 160,
+		"h": 160,
+		"tolerance": 6
+	},
+	"tools": [
+		"textview"
+	],
+	"sticky": {
+		"lines": [
+			"ls",
+			"open FILE",
+			"grep WORD FILE"
+		],
+		"paste": true
+	},
+	"replies": {
+		"right": "IT'S A CIRCLE. prof will think I'm a genius. you're the genius. thank you.",
+		"wrong_file": [
+			"that's not Orrin. is it?",
+			"not orrin either??",
+			"no"
+		],
+		"wrong_shape": [
+			"prof says it looks like an egg.",
+			"still an egg??",
+			"egg"
+		],
+		"wrong_size": [
+			"round! but tiny. prof wants it 160 across.",
+			"wrong size??",
+			"size"
+		],
+		"give_up": "ok i'll ask someone else"
+	}
+}

@@ -1,0 +1,87 @@
+{
+	"client": {
+		"name": "Tobi",
+		"portrait_calm": "res://assets/tobi_calm.png",
+		"portrait_panic": "res://assets/tobi_panic.png"
+	},
+	"folder": "/clients/tobi",
+	"email": {
+		"from": "Tobi",
+		"subject": "quick favour (urgent)",
+		"body": "My chart script won't start. Probably your machine. It's chart.sh in /clients/tobi. I'd fix it myself but my assistant did the fixing. Just run it and send me the chart. Square grid. Obviously.\n\nTobi (senior dev)",
+		"clickable": []
+	},
+	"texts": {},
+	"pictures": [],
+	"extra_files": [
+		{
+			"path": "chart.sh",
+			"type": "script",
+			"x": false,
+			"copies": 3,
+			"prints": [
+				"chart.sh: drawing chart...",
+				"chart.sh: drawing chart...",
+				"chart.sh: oops"
+			],
+			"makes": {
+				"path": "~/chart.png",
+				"type": "picture",
+				"open_size": [
+					160,
+					96
+				],
+				"placeholder": {
+					"kind": "grid"
+				}
+			}
+		},
+		{
+			"path": "README.txt",
+			"type": "text",
+			"lines": [
+				"chart.sh - draws the chart",
+				"works on my machine",
+				"- tobi"
+			]
+		}
+	],
+	"answer": "/home/you/chart.png",
+	"single": true,
+	"target": {
+		"w": 160,
+		"h": 160,
+		"tolerance": 6
+	},
+	"tools": [
+		"textview"
+	],
+	"sticky": {
+		"lines": [
+			"cp FILE DEST",
+			"chmod +x FILE",
+			"kill PID",
+			"ps"
+		],
+		"paste": false
+	},
+	"replies": {
+		"right": "Looks right. I mean it was always going to work. Thanks, I guess.",
+		"crowded": [
+			"Why are there four charts. Close the extras.",
+			"Still more than one chart."
+		],
+		"wrong_file": [
+			"That's not my chart.",
+			"No."
+		],
+		"wrong_shape": [
+			"The grid isn't square. Did you even look?",
+			"Not square."
+		],
+		"wrong_size": [
+			"Square, sure. Tiny, though. 160.",
+			"Size."
+		]
+	}
+}

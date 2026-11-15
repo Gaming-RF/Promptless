@@ -1,0 +1,91 @@
+{
+	"client": {
+		"name": "Ada Okafor",
+		"portrait_calm": "res://assets/okafor_calm.png",
+		"portrait_panic": "res://assets/okafor_panic.png"
+	},
+	"folder": "/clients/okafor",
+	"email": {
+		"from": "Ada Okafor",
+		"subject": "our wedding photo",
+		"body": "Our wedding photo is gone. The memory bot kept it, and now the folder looks empty. Our son says old copies hide in folders whose names start with a dot? Everything is in /clients/okafor. It's our anniversary.\n\nAda & Femi",
+		"clickable": []
+	},
+	"texts": {},
+	"pictures": [],
+	"extra_files": [
+		{
+			"path": ".album",
+			"type": "dir"
+		},
+		{
+			"path": ".album/faded_1.png",
+			"type": "picture",
+			"open_size": [
+				140,
+				140
+			],
+			"placeholder": {
+				"kind": "half",
+				"side": "left"
+			}
+		},
+		{
+			"path": ".album/faded_2.png",
+			"type": "picture",
+			"open_size": [
+				140,
+				140
+			],
+			"placeholder": {
+				"kind": "half",
+				"side": "right"
+			}
+		},
+		{
+			"path": ".album/note.txt",
+			"type": "text",
+			"lines": [
+				"two copies, both faded.",
+				"each kept half of us.",
+				"lay one over the other."
+			]
+		}
+	],
+	"answer": ".album/faded_1.png",
+	"target": {
+		"w": 140,
+		"h": 140,
+		"tolerance": 6
+	},
+	"check": "overlay",
+	"overlay": {
+		"top": ".album/faded_2.png",
+		"under": ".album/faded_1.png",
+		"align": 6,
+		"either": true
+	},
+	"tools": [
+		"trace",
+		"textview"
+	],
+	"sticky": {
+		"lines": [
+			"ls -a",
+			"cd FOLDER",
+			"man COMMAND"
+		],
+		"paste": false
+	},
+	"replies": {
+		"right": "Both of us, together again. Femi is crying. I am not crying. Thank you, dear.",
+		"wrong_file": [
+			"That's only half of us.",
+			"Still half."
+		],
+		"wrong_shape": [
+			"We look like ghosts. Line us up?",
+			"Still ghosts."
+		]
+	}
+}

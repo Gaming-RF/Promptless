@@ -29,7 +29,7 @@ func files() -> Array:
 
 
 func new_result() -> Dictionary:
-	return {"out": [], "hint": [], "open": "", "clear": false, "kill": 0, "launch": {}, "ask": ""}
+	return {"out": [], "hint": [], "open": "", "clear": false, "kill": 0, "launch": {}, "ask": "", "ran": {}}
 
 
 func prompt() -> String:
@@ -485,10 +485,22 @@ func _exec(cmd: String, res: Dictionary) -> void:
 		res.out.append("sh: %s: Permission denied" % cmd)
 	elif n.type != "script":
 		res.out.append("sh: %s: cannot execute binary file" % cmd)
+	elif n.get("needs_root", false) and fs.user != "root":
+		res.out.append("%s: Operation not permitted (run it as root: sudo)" % cmd)
 	else:
+		res.ran = {"path": path, "user": fs.user}
 		res.out.append_array(n.get("prints", []))
-		if n.has("opens"):
-			var target: String = n.opens if String(n.opens).begins_with("/") else job.folder + "/" + n.opens
+		var target := ""
+		if n.has("makes"):
+			var made: Dictionary = n.makes.duplicate(true)
+			target = fs.absolute(cwd, made.path)
+			made.erase("path")
+			if made.get("type", "") == "picture" and not made.has("asset"):
+				made.asset = job.picture_dir + target.get_file()
+			fs.add_file(target, made)
+		elif n.has("opens"):
+			target = n.opens if String(n.opens).begins_with("/") else job.folder + "/" + n.opens
+		if target != "":
 			res.launch = {"path": target, "count": 1 + int(n.get("copies", 0))}
 
 
