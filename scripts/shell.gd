@@ -1,10 +1,10 @@
 extends RefCounted
-## The pretend shell. Reads one typed line and returns what to print.
-## It never touches windows: it returns {"open": file} and the desktop does the rest.
 
 const COMMANDS := ["grep", "ls", "open"]
+const COURTESY := ["alias", "cat", "clear", "echo", "head", "help", "history", "less", "mv", "ps", "pwd"]
 
 var job: Dictionary
+var history: Array = []
 var _token_re := RegEx.new()
 
 
@@ -21,12 +21,12 @@ func files() -> Array:
 	return names
 
 
-## Returns {"out": [lines], "hint": [dim lines], "open": file or ""}.
-func run(line: String) -> Dictionary:
-	var res := {"out": [], "hint": [], "open": ""}
+func run(line: String, programs: Array = []) -> Dictionary:
+	var res := {"out": [], "hint": [], "open": "", "clear": false}
 	line = line.strip_edges()
 	if line.is_empty():
 		return res
+	history.append(line)
 	if "|" in line or ">" in line:
 		res.out.append(job.shell.pipes)
 		return res
@@ -39,8 +39,42 @@ func run(line: String) -> Dictionary:
 			_grep(args, res)
 		"open":
 			_open(args, res)
+		"help":
+			res.out.append_array(job.shell.help)
+		"clear":
+			res.clear = true
+		"pwd":
+			res.out.append(job.folder)
+		"echo":
+			res.out.append(" ".join(args))
+		"history":
+			for i in history.size():
+				res.out.append("%4d  %s" % [i + 1, history[i]])
+		"alias":
+			res.out.append_array(job.shell.alias)
+		"ps":
+			res.out.append("  PID CMD")
+			for p in programs:
+				res.out.append("%5d %s" % [p.pid, p.cmd])
+		"cat", "less":
+			_print_text(cmd, args, res, -1)
+		"head":
+			var n := 10
+			if args.size() >= 2 and args[0] == "-n":
+				n = String(args[1]).to_int()
+				args = args.slice(2)
+			elif not args.is_empty() and args[0].begins_with("-") and args[0].substr(1).is_valid_int():
+				n = args.pop_front().substr(1).to_int()
+			_print_text(cmd, args, res, n)
+		"mv":
+			if args.size() < 2:
+				res.out.append(job.shell.mv_usage)
+			elif resolve(args[0]) == "":
+				_missing("mv", args[0], res)
+			else:
+				res.out.append(job.shell.mv_readonly.format({"file": args[0]}))
 		_:
-			var s := closest(cmd, COMMANDS, 2)
+			var s := closest(cmd, COMMANDS + COURTESY, 2)
 			if s != "":
 				res.out.append(job.shell.did_you_mean_cmd.format({"cmd": cmd, "s": s}))
 			else:
@@ -48,13 +82,11 @@ func run(line: String) -> Dictionary:
 	return res
 
 
-## Tab completion: completes the command, then file names. Returns
-## {"line": completed text, "options": [names to list when ambiguous]}.
 func complete(line: String) -> Dictionary:
 	var cut := line.rfind(" ")
 	var head := line.substr(0, cut + 1)
 	var word := line.substr(cut + 1)
-	var pool: Array = COMMANDS if cut == -1 else files()
+	var pool: Array = (COMMANDS + COURTESY) if cut == -1 else files()
 	var matches: Array = pool.filter(func(n): return n.begins_with(word))
 	if matches.is_empty():
 		return {"line": line, "options": []}
@@ -77,7 +109,6 @@ func tokenize(line: String) -> Array:
 	return out
 
 
-## Accepts "notes.txt", "./notes.txt" or the full "/clients/x/notes.txt".
 func resolve(name: String) -> String:
 	if name.begins_with("./"):
 		name = name.substr(2)
@@ -86,7 +117,6 @@ func resolve(name: String) -> String:
 	return name if name in files() else ""
 
 
-## Best file for a mistyped name; "ball 3" (typed as two words) -> "ball_3.png".
 func suggest_file(typed: String) -> String:
 	var norm := typed.strip_edges().replace(" ", "_").to_lower()
 	for f in files():
@@ -113,13 +143,21 @@ static func closest(word: String, pool: Array, max_dist: int) -> String:
 
 
 static func distance(a: String, b: String) -> int:
-	var prev: Array = range(b.length() + 1)
-	for i in a.length():
-		var cur: Array = [i + 1]
-		for j in b.length():
-			cur.append(mini(mini(cur[j] + 1, prev[j + 1] + 1), prev[j] + int(a[i] != b[j])))
-		prev = cur
-	return prev[b.length()]
+	var d: Array = []
+	for i in a.length() + 1:
+		var row: Array = []
+		row.resize(b.length() + 1)
+		row[0] = i
+		d.append(row)
+	for j in b.length() + 1:
+		d[0][j] = j
+	for i in range(1, a.length() + 1):
+		for j in range(1, b.length() + 1):
+			var cost := int(a[i - 1] != b[j - 1])
+			d[i][j] = mini(mini(d[i - 1][j] + 1, d[i][j - 1] + 1), d[i - 1][j - 1] + cost)
+			if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+				d[i][j] = mini(d[i][j], d[i - 2][j - 2] + 1)
+	return d[a.length()][b.length()]
 
 
 func _missing(cmd: String, typed: String, res: Dictionary, whole := "") -> void:
@@ -151,7 +189,7 @@ func _grep(args: Array, res: Dictionary) -> void:
 			missing = true
 			continue
 		if not job.texts.has(name):
-			continue # pictures hold no text lines
+			continue
 		for l in job.texts[name]:
 			var hit: bool = l.to_lower().contains(word.to_lower()) if ignore_case else l.contains(word)
 			if hit:
@@ -159,6 +197,20 @@ func _grep(args: Array, res: Dictionary) -> void:
 				matched = true
 	if not matched and not missing:
 		res.hint.append(job.shell.grep_no_match)
+
+
+func _print_text(cmd: String, args: Array, res: Dictionary, limit: int) -> void:
+	if args.is_empty():
+		res.out.append(job.shell.read_usage.format({"cmd": cmd}))
+		return
+	var name := resolve(args[0])
+	if name == "":
+		_missing(cmd, args[0], res)
+	elif not job.texts.has(name):
+		res.out.append(job.shell.cat_picture.format({"cmd": cmd, "file": name}))
+	else:
+		var lines: Array = job.texts[name]
+		res.out.append_array(lines if limit < 0 else lines.slice(0, limit))
 
 
 func _open(args: Array, res: Dictionary) -> void:

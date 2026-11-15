@@ -1,9 +1,7 @@
 extends RefCounted
-## Theme + small widget helpers. Drop a pixel font at res://assets/font.ttf (or .otf/.fnt)
-## and it is picked up automatically. Set FONT_SIZE to the font's drawn size.
 
 const Palette = preload("res://scripts/palette.gd")
-const FONT_SIZE := 8 # Press Start 2P is drawn at 8px; use multiples of 8
+const FONT_SIZE := 8
 const FONT_PATHS := ["res://assets/font.ttf", "res://assets/font.otf", "res://assets/font.fnt"]
 
 
@@ -21,7 +19,7 @@ static func flat(bg: Color, border := Color.TRANSPARENT, border_w := 0, margin_x
 	sb.set_border_width_all(border_w)
 	sb.content_margin_left = margin_x
 	sb.content_margin_right = margin_x
-	sb.content_margin_top = border_w # border must not paint over the glyphs
+	sb.content_margin_top = border_w
 	sb.content_margin_bottom = border_w
 	return sb
 

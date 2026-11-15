@@ -1,5 +1,4 @@
 extends Control
-## End screen: the fixed ball bounces, with a little squash on landing.
 
 const PictureView = preload("res://scripts/picture_view.gd")
 const Palette = preload("res://scripts/palette.gd")
@@ -17,7 +16,7 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var p := fmod(_t, 0.9) / 0.9
-	var h := 4.0 * p * (1.0 - p) # 0 on the ground, 1 at the top
+	var h := 4.0 * p * (1.0 - p)
 	var squash := clampf(1.0 - h * 6.0, 0.0, 1.0)
 	var w := ball * (1.0 + 0.25 * squash)
 	var hh := ball * (1.0 - 0.25 * squash)

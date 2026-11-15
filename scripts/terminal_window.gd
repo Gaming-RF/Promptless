@@ -1,5 +1,4 @@
 extends "res://scripts/desk_window.gd"
-## Terminal window: output scrollback + one input line. Emits the typed line.
 
 signal command_entered(line)
 signal typed
@@ -21,7 +20,7 @@ func build(prompt_text: String, s: Vector2) -> void:
 	bg.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	output.scroll_following = true
 	output.focus_mode = FOCUS_NONE
-	output.mouse_filter = MOUSE_FILTER_PASS # clicks fall through to the window -> focus input
+	output.mouse_filter = MOUSE_FILTER_PASS
 	output.add_theme_color_override("default_color", Palette.TERM_TEXT)
 	content.add_child(output)
 	var row := HBoxContainer.new()
@@ -66,7 +65,6 @@ func set_line(t: String) -> void:
 	input.caret_column = t.length()
 
 
-## Tab completes (the desktop asks the shell); Up/Down walk the history.
 func _on_input_key(e: InputEvent) -> void:
 	if not (e is InputEventKey and e.pressed):
 		return

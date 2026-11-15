@@ -25,7 +25,6 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 10)
 	add_child(box)
 	box.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	# The ball bounces back into shape, gets squashed, and does it again.
 	var job: Dictionary = campaign.jobs[campaign.end.get("picture_job", 0)]
 	var holder := CenterContainer.new()
 	holder.custom_minimum_size = Vector2(110, 80)

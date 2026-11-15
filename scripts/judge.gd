@@ -1,8 +1,4 @@
 extends RefCounted
-## Win check. Reads the snapshot record only; nothing is measured from pixels.
-## A record is {"name": "snapshot_1.png", "windows": [{"file", "w", "h"}]}
-## (w/h = the picture's size inside its window, in game pixels).
-## Wrong file is checked before shape: any ball can be stretched round.
 
 
 static func verdict(record, job: Dictionary) -> String:

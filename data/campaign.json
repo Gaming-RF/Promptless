@@ -24,14 +24,28 @@
 		"shell": {
 			"prompt": "$",
 			"welcome": "oldbox shell. you are in {folder}",
-			"unknown": "{cmd}: this old box only knows ls, grep and open.",
+			"unknown": "{cmd}: command not found. try help",
 			"did_you_mean_cmd": "{cmd}: not found. did you mean {s}?",
 			"did_you_mean_file": "did you mean {s}?",
 			"pipes": "not supported by this shell",
 			"grep_usage": "usage: grep WORD FILE",
 			"grep_no_match": "(nothing matched. grep cares about Capitals.)",
 			"open_usage": "usage: open FILE",
-			"open_text": "{n} lines of chaos. Try grep."
+			"open_text": "{n} lines of chaos. Try grep.",
+			"help": [
+				"needed: ls  grep  open",
+				"also: cat head less echo pwd",
+				"      history alias ps clear mv",
+				"Tab completes. Up/Down = history."
+			],
+			"viewer": "pixview",
+			"alias": [
+				"alias open='pixview'   # set up by the previous owner"
+			],
+			"cat_picture": "{cmd}: {file}: that's a picture. try open",
+			"mv_readonly": "mv: cannot move '{file}': Read-only file system",
+			"mv_usage": "usage: mv FILE DEST",
+			"read_usage": "usage: {cmd} FILE"
 		},
 		"ui": {
 			"attach_none": "attach: none (use SNAP)",

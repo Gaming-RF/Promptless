@@ -1,11 +1,11 @@
 extends "res://scripts/desk_window.gd"
-## Picture viewer window. Resizing stretches the picture; SNAP snapshots this window.
 
 signal snapshot_requested(win)
 
 const PictureView = preload("res://scripts/picture_view.gd")
 
 var file := ""
+var pid := 0
 var view := PictureView.new()
 var _flash := ColorRect.new()
 var _readout: Label
@@ -36,7 +36,6 @@ func setup(file_name: String, tex: Texture2D, variant: int, open_size: Vector2, 
 	set_content_size(open_size)
 
 
-## Shows the picture size in the corner while it is being stretched.
 func set_content_size(s: Vector2) -> void:
 	super.set_content_size(s)
 	if _readout == null or not is_inside_tree():

@@ -1,7 +1,4 @@
 extends RefCounted
-## Loads the campaign (title, end screen, shared strings) and its jobs.
-## Each job file is merged on top of campaign.defaults, so a job only states
-## what is specific to it. Everything themed lives in data/, never in code.
 
 const UIRef = preload("res://scripts/ui.gd")
 const REQUIRED := [
@@ -31,7 +28,6 @@ static func load_campaign(path: String) -> Dictionary:
 	return c
 
 
-## Deep merge: values in b win; nested dictionaries are merged.
 static func merge(a: Dictionary, b: Dictionary) -> Dictionary:
 	var out := a.duplicate(true)
 	for k in b:

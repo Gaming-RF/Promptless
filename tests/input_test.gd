@@ -1,6 +1,4 @@
 extends SceneTree
-## Drives the game through real input events (keys, clicks, drags).
-## godot --path . -s tests/input_test.gd   (windowed or --headless)
 
 var fails := 0
 var main
@@ -75,8 +73,7 @@ func _initialize() -> void:
 	var desk = main.current
 	check(desk.get_script().resource_path.ends_with("desktop.gd"), "Enter on title boots the desktop")
 
-	await create_timer(0.6).timeout # let the mail window bounce in
-	# Click the red command in the email (game coords measured from a screenshot).
+	await create_timer(0.6).timeout
 	await click(Vector2(200, 114))
 	check(desk.term.input.text == "grep Comets notes.txt", "email link pastes full command: '%s'" % desk.term.input.text)
 	await key(KEY_ENTER)
@@ -103,7 +100,6 @@ func _initialize() -> void:
 	await key(KEY_DOWN)
 	check(w.get_content_size() == before, "arrow keys don't resize while typing")
 
-	# Drag the right edge 64px.
 	var edge: Vector2 = w.position + Vector2(w.size.x - 2, w.size.y / 2)
 	await mouse("move", edge)
 	await mouse("down", edge)
@@ -112,18 +108,15 @@ func _initialize() -> void:
 	await mouse("up", edge + Vector2(64, 0))
 	check(w.get_content_size() == Vector2(160, 160), "edge drag stretches to %s" % w.get_content_size())
 
-	# Arrow keys once the picture is clicked.
 	await click(w.position + w.size / 2)
 	await key(KEY_RIGHT)
 	check(w.get_content_size() == Vector2(161, 160), "arrow resizes clicked picture")
 	await key(KEY_LEFT)
 
-	# Back to the terminal by clicking its middle, then type.
 	await click(desk.term.position + desk.term.size / 2)
 	await type_text("x")
 	check(desk.term.input.text == "x", "clicking terminal body returns typing to input")
 
-	# SNAP, then Send.
 	var snap: Control = w._buttons.get_child(0)
 	await click(snap.get_global_rect().get_center())
 	check(desk.attachment != null, "SNAP button attaches a snapshot")

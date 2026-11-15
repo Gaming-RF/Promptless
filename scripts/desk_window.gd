@@ -1,7 +1,4 @@
 extends Control
-## A pretend desktop window: 1px border, 10px title bar, content area below.
-## Drag the title bar to move. If resizable, drag the right/bottom edges or the
-## corner grip; the content size is what win checks read.
 
 signal focused(win)
 

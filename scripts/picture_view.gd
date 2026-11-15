@@ -1,6 +1,4 @@
 extends Control
-## Stretch: the picture always fills its rect, no "keep proportions".
-## With no texture it paints a PLACEHOLDER ball so the job is playable before art lands.
 
 const Palette = preload("res://scripts/palette.gd")
 

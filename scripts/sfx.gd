@@ -1,6 +1,4 @@
 extends Node
-## Three sounds. Drop files at assets/sfx/type, mail, success (.wav/.ogg/.mp3).
-## Missing files are simply silent.
 
 const UI = preload("res://scripts/ui.gd")
 const SOUNDS := {"type": "res://assets/sfx/type", "mail": "res://assets/sfx/mail", "success": "res://assets/sfx/success"}
@@ -36,7 +34,6 @@ func play(key: String) -> void:
 	p.play()
 
 
-## Music must start from a click/key press: browsers block audio before one.
 func start_music(path: String) -> void:
 	if music.playing or not ResourceLoader.exists(path):
 		return

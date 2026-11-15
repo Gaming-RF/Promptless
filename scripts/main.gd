@@ -1,5 +1,4 @@
 extends Control
-## Title -> desktop (job 1, job 2, ...) -> end screen. All content lives in data/.
 
 const CAMPAIGN_PATH := "res://data/campaign.json"
 const UI = preload("res://scripts/ui.gd")

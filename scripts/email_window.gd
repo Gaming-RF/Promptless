@@ -1,6 +1,4 @@
 extends "res://scripts/desk_window.gd"
-## Mail window: the client's email, replies appended below, and a reply bar
-## with the current attachment and a Send button. Built once; show_job() refills it.
 
 signal command_clicked(cmd)
 signal send_pressed

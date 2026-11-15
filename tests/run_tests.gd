@@ -1,5 +1,4 @@
 extends SceneTree
-## Headless checks: godot --headless --path . -s tests/run_tests.gd
 
 const JobData = preload("res://scripts/job_data.gd")
 const Shell = preload("res://scripts/shell.gd")
@@ -22,7 +21,6 @@ func words(t: String) -> int:
 	return t.split(" ", false).size()
 
 
-## Rules every job must follow (from the game plan).
 func check_job_data(job: Dictionary) -> void:
 	var tag: String = "[%s] " % job.folder
 	var word: String = job.search_word
@@ -89,11 +87,29 @@ func _initialize() -> void:
 	check(r.hint.size() == 1 and "ball_3.png" in r.hint[0], "typo file -> did you mean")
 	r = sh.run("gerp Comets notes.txt")
 	check("did you mean grep" in r.out[0], "gerp -> did you mean grep")
+	r = sh.run("frobnicate")
+	check(r.out == ["frobnicate: command not found. try help"], "unknown command line")
 	r = sh.run("cat notes.txt")
-	check(r.out[0].begins_with("cat:") and "only knows" in r.out[0], "unknown command funny line")
+	check(r.out.size() == 30, "cat prints the whole file")
+	r = sh.run("head -n 3 notes.txt")
+	check(r.out.size() == 3 and sh.run("head -5 notes.txt").out.size() == 5 and sh.run("head notes.txt").out.size() == 10, "head -n N / -N / default 10")
+	r = sh.run("cat ball_3.png")
+	check("picture" in r.out[0], "cat on a picture")
+	r = sh.run("mv ball_3.png ball_9.png")
+	check("Read-only" in r.out[0], "mv: client folder is read-only")
+	check(sh.run("pwd").out == ["/clients/dex"], "pwd")
+	check(sh.run("echo hi there").out == ["hi there"], "echo")
+	check("pixview" in sh.run("alias").out[0], "alias reveals open = pixview")
+	check(sh.run("clear").clear, "clear")
+	r = sh.run("history")
+	check(r.out.size() == sh.history.size() and r.out[-1].ends_with("history"), "history lists commands")
+	r = sh.run("ps", [{"pid": 101, "cmd": "sh"}, {"pid": 140, "cmd": "pixview ball_3.png"}])
+	check(r.out.size() == 3 and "pixview ball_3.png" in r.out[2], "ps lists programs from the desktop")
+	check(sh.run("hlep").out[0].contains("did you mean help"), "typo of courtesy command")
 	r = sh.run("ls | grep x")
 	check(r.out == [job.shell.pipes], "pipes not supported")
 	check(sh.complete("gr").line == "grep ", "tab: command")
+	check(sh.complete("hi").line == "history ", "tab: courtesy command")
 	check(sh.complete("grep Comets no").line == "grep Comets notes.txt ", "tab: file")
 	var amb: Dictionary = sh.complete("open ba")
 	check(amb.line == "open ball_" and amb.options.is_empty(), "tab: common prefix")
@@ -105,7 +121,6 @@ func _initialize() -> void:
 	r = sh2.run("grep Gold coach.txt notes.txt")
 	check(r.out.size() == 1 and r.out[0].begins_with("coach.txt:"), "job 2: multi-file grep prefixes names")
 
-	# Integration: drive the real desktop through both jobs.
 	var main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	await process_frame

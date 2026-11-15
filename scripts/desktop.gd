@@ -1,7 +1,4 @@
 extends Control
-## The pretend desktop: mail + terminal + picture windows.
-## Owns the job runner: snapshot record -> attachment -> Judge -> client reply.
-## load_job() swaps in the next job's email and folder without clearing the terminal.
 
 signal job_won(reply)
 
@@ -22,8 +19,8 @@ var sfx: Node
 var shell
 var email
 var term
-var pictures := {} # file -> PictureWindow
-var attachment = null # snapshot record, or null
+var pictures := {}
+var attachment = null
 var snap_count := 0
 var finished := false
 var _music_btn := Button.new()
@@ -69,7 +66,9 @@ func _ready() -> void:
 
 func load_job(j: Dictionary) -> void:
 	job = j
+	var old_history: Array = shell.history if shell else []
 	shell = Shell.new(job)
+	shell.history = old_history
 	attachment = null
 	finished = false
 	for w in pictures.values():
@@ -83,7 +82,6 @@ func load_job(j: Dictionary) -> void:
 	sfx.play("mail")
 
 
-## New windows drop in and bounce. Only position moves: sizes are what snapshots read.
 func bounce_in(w: Control, final_pos: Vector2) -> void:
 	w.position = final_pos - Vector2(0, 28)
 	var t := w.create_tween()
@@ -92,13 +90,25 @@ func bounce_in(w: Control, final_pos: Vector2) -> void:
 
 func run_command(line: String) -> void:
 	term.print_line("%s %s" % [job.shell.prompt, line], Palette.TITLE_TEXT)
-	var r: Dictionary = shell.run(line)
+	var r: Dictionary = shell.run(line, running_programs())
+	if r.clear:
+		term.output.clear()
 	for l in r.out:
 		term.print_line(l)
 	for h in r.hint:
 		term.print_line(h, Palette.DIM)
 	if r.open != "":
 		open_picture(r.open)
+
+
+func running_programs() -> Array:
+	var list: Array = [{"pid": 101, "cmd": "sh"}, {"pid": 102, "cmd": "mail"}]
+	for f in pictures:
+		list.append({"pid": pictures[f].pid, "cmd": "%s %s" % [job.shell.viewer, f]})
+	return list
+
+
+var _next_pid := 140
 
 
 func open_picture(file: String):
@@ -116,12 +126,13 @@ func open_picture(file: String):
 	bounce_in(w, w.position)
 	w.focused.connect(_focus)
 	w.snapshot_requested.connect(snapshot)
+	w.pid = _next_pid
+	_next_pid += 1
 	pictures[file] = w
-	_focus(w, false) # opened from the terminal: keep typing in the terminal
+	_focus(w, false)
 	return w
 
 
-## Contract message 7: a snapshot was taken, with the windows inside it and their sizes.
 func snapshot(w) -> void:
 	snap_count += 1
 	var s: Vector2 = w.get_content_size()
@@ -180,7 +191,6 @@ func _focus(w, take_keyboard := true) -> void:
 		term.focus_input()
 
 
-## Keyboard resizing: arrows resize the selected picture 1px (Shift: 8px).
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
