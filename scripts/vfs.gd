@@ -3,13 +3,21 @@ extends RefCounted
 var nodes := {}
 var home := "/home/you"
 var client_user := "client"
+var user := "you"
+var homes := {}
 
 
 func _init(job: Dictionary) -> void:
 	home = job.get("home", home)
+	user = home.get_file()
+	homes[user] = home
 	client_user = String(job.client.get("user", job.client.name)).to_lower()
 	add_dir("/")
 	add_dir(home)
+	for u in job.get("users", {}):
+		if u != user:
+			homes[u] = job.users[u].get("home", "/home/" + u)
+			add_dir(homes[u])
 	add_dir(job.folder)
 	for name in job.texts:
 		add_file(job.folder + "/" + name, {"type": "text", "lines": job.texts[name]})
@@ -23,6 +31,9 @@ func _init(job: Dictionary) -> void:
 		var path: String = f.path if f.path.begins_with("/") else job.folder + "/" + f.path
 		if f.type == "dir":
 			add_dir(path)
+			for k in f:
+				if k != "path":
+					nodes[norm(path)][k] = f[k]
 		else:
 			var data: Dictionary = f.duplicate()
 			data.erase("path")
@@ -93,21 +104,45 @@ func node(path: String) -> Dictionary:
 	return nodes.get(path, {})
 
 
+func home_of(u: String) -> String:
+	return homes.get(u, "/root")
+
+
+func under(path: String, dir: String) -> bool:
+	return path == dir or path.begins_with(dir + "/")
+
+
 func writable(path: String) -> bool:
-	return path == home or path.begins_with(home + "/")
+	return user == "root" or under(path, home_of(user))
 
 
 func owner(path: String) -> String:
-	return home.get_file() if writable(path) else client_user
+	for u in homes:
+		if under(path, homes[u]):
+			return u
+	return client_user
 
 
 func can_read(path: String) -> bool:
-	return node(path).get("r", true)
+	if user == "root":
+		return true
+	if not node(path).get("r", true):
+		return false
+	var p := path
+	while true:
+		if node(p).get("private", false) and owner(p) != user:
+			return false
+		if p == "/":
+			break
+		p = p.get_base_dir()
+	return true
 
 
 func can_exec(path: String) -> bool:
 	var n := node(path)
-	return n.get("type", "") == "dir" or n.get("x", false)
+	if n.get("type", "") == "dir":
+		return can_read(path)
+	return n.get("x", false) and can_read(path)
 
 
 func mode_string(path: String) -> String:

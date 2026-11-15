@@ -1,13 +1,15 @@
 extends RefCounted
 
 const VFS = preload("res://scripts/vfs.gd")
-const COMMANDS := ["cd", "chmod", "cp", "grep", "kill", "ls", "man", "open"]
-const COURTESY := ["alias", "cat", "clear", "echo", "head", "help", "history", "less", "mv", "ps", "pwd"]
+const COMMANDS := ["cd", "chmod", "cp", "grep", "kill", "ls", "man", "open", "sort", "su", "sudo", "unzip"]
+const COURTESY := ["alias", "cat", "clear", "echo", "exit", "head", "help", "history", "less", "mv", "ps", "pwd", "whoami"]
 
 var job: Dictionary
 var fs
 var cwd := "/"
 var history: Array = []
+var pending := {}
+var user_stack: Array = []
 var _token_re := RegEx.new()
 
 
@@ -22,8 +24,26 @@ func files() -> Array:
 	return fs.children(cwd)
 
 
+func new_result() -> Dictionary:
+	return {"out": [], "hint": [], "open": "", "clear": false, "kill": 0, "launch": {}, "ask": ""}
+
+
+func prompt() -> String:
+	if fs.user == "root":
+		return "#"
+	if fs.user == fs.home.get_file():
+		return job.shell.prompt
+	return "%s%s" % [fs.user, job.shell.prompt]
+
+
+func users() -> Dictionary:
+	return job.get("users", {})
+
+
 func run(line: String, programs: Array = []) -> Dictionary:
-	var res := {"out": [], "hint": [], "open": "", "clear": false, "kill": 0, "launch": {}}
+	if not pending.is_empty():
+		return _answer(line, programs)
+	var res := new_result()
 	line = line.strip_edges()
 	if line.is_empty():
 		return res
@@ -33,10 +53,32 @@ func run(line: String, programs: Array = []) -> Dictionary:
 		return res
 	var args := tokenize(line)
 	var cmd: String = args.pop_front()
+	_dispatch(cmd, args, res, programs)
+	return res
+
+
+func _dispatch(cmd: String, args: Array, res: Dictionary, programs: Array) -> void:
 	if "/" in cmd:
 		_exec(cmd, res)
-		return res
+		return
 	match cmd:
+		"sort":
+			_sort(args, res)
+		"unzip":
+			_unzip(args, res)
+		"su":
+			_su(args, res)
+		"sudo":
+			_sudo(args, res)
+		"whoami":
+			res.out.append(fs.user)
+		"exit":
+			if user_stack.is_empty():
+				res.out.append(job.shell.exit_last)
+			else:
+				var back: Dictionary = user_stack.pop_back()
+				fs.user = back.user
+				cwd = back.cwd
 		"cp":
 			_cp(args, res)
 		"chmod":
@@ -88,7 +130,6 @@ func run(line: String, programs: Array = []) -> Dictionary:
 				res.out.append(job.shell.did_you_mean_cmd.format({"cmd": cmd, "s": s}))
 			else:
 				res.out.append(job.shell.unknown.format({"cmd": cmd}))
-	return res
 
 
 func complete(line: String) -> Dictionary:
@@ -204,6 +245,8 @@ func _ls(args: Array, res: Dictionary) -> void:
 			res.out.append("ls: cannot access '%s': No such file or directory" % t)
 		elif not fs.is_dir(path):
 			res.out.append(t)
+		elif not fs.can_read(path):
+			res.out.append("ls: cannot open directory '%s': Permission denied" % t)
 		else:
 			if targets.size() > 1:
 				res.out.append(t + ":")
@@ -220,11 +263,13 @@ func _ls(args: Array, res: Dictionary) -> void:
 
 func _cd(args: Array, res: Dictionary) -> void:
 	var target: String = "~" if args.is_empty() else args[0]
-	var path := resolve(target)
+	var path: String = fs.home_of(fs.user) if target == "~" else resolve(target)
 	if path == "":
 		res.out.append("cd: %s: No such file or directory" % target)
 	elif not fs.is_dir(path):
 		res.out.append("cd: %s: Not a directory" % target)
+	elif not fs.can_read(path):
+		res.out.append("cd: %s: Permission denied" % target)
 	else:
 		cwd = path
 
@@ -438,3 +483,157 @@ func _exec(cmd: String, res: Dictionary) -> void:
 		if n.has("opens"):
 			var target: String = n.opens if String(n.opens).begins_with("/") else job.folder + "/" + n.opens
 			res.launch = {"path": target, "count": 1 + int(n.get("copies", 0))}
+
+
+func _sort(args: Array, res: Dictionary) -> void:
+	var reverse := false
+	var numeric := false
+	var files_in: Array = []
+	for a in args:
+		if a.begins_with("-"):
+			reverse = reverse or "r" in a
+			numeric = numeric or "n" in a
+		else:
+			files_in.append(a)
+	if files_in.is_empty():
+		res.out.append(job.shell.sort_usage)
+		return
+	var lines: Array = []
+	for f in files_in:
+		var path := resolve(f)
+		if path == "":
+			_missing("sort", f, res)
+			return
+		var n: Dictionary = fs.node(path)
+		if n.type != "text":
+			res.out.append("sort: %s: %s" % [f, "Is a directory" if n.type == "dir" else "not a text file"])
+			return
+		if not fs.can_read(path):
+			res.out.append("sort: cannot read: %s: Permission denied" % f)
+			return
+		lines.append_array(n.lines)
+	if numeric:
+		lines.sort_custom(func(a, b): return _lead_num(a) < _lead_num(b))
+	else:
+		lines.sort_custom(func(a, b): return a.nocasecmp_to(b) < 0)
+	if reverse:
+		lines.reverse()
+	res.out.append_array(lines)
+
+
+static func _lead_num(t: String) -> float:
+	var re := RegEx.new()
+	re.compile("^\\s*(-?[0-9]+(\\.[0-9]+)?)")
+	var m := re.search(t)
+	return m.get_string(1).to_float() if m else 0.0
+
+
+func _unzip(args: Array, res: Dictionary) -> void:
+	var src_arg := ""
+	var dest_arg := ""
+	var i := 0
+	while i < args.size():
+		if args[i] == "-d" and i + 1 < args.size():
+			dest_arg = args[i + 1]
+			i += 2
+			continue
+		if src_arg == "":
+			src_arg = args[i]
+		i += 1
+	if src_arg == "":
+		res.out.append(job.shell.unzip_usage)
+		return
+	var src := resolve(src_arg)
+	if src == "":
+		res.out.append("unzip:  cannot find or open %s" % src_arg)
+		return
+	var n: Dictionary = fs.node(src)
+	if n.type != "archive":
+		res.out.append("unzip:  %s is not a zip archive" % src_arg)
+		return
+	if not fs.can_read(src):
+		res.out.append("unzip:  cannot find or open %s: Permission denied" % src_arg)
+		return
+	var dest: String = cwd if dest_arg == "" else fs.absolute(cwd, dest_arg)
+	if not fs.writable(dest):
+		res.out.append(job.shell.unzip_readonly.format({"dir": dest}))
+		return
+	res.out.append("Archive:  %s" % src_arg)
+	if n.has("password"):
+		var first: String = n.contents[0].path if not n.contents.is_empty() else src_arg
+		pending = {"kind": "unzip", "src": src, "dest": dest}
+		res.ask = job.shell.unzip_password.format({"file": src_arg, "entry": first})
+		return
+	_extract(src, dest, res)
+
+
+func _extract(src: String, dest: String, res: Dictionary) -> void:
+	fs.add_dir(dest)
+	for c in fs.node(src).contents:
+		var data: Dictionary = c.duplicate(true)
+		var rel: String = data.path
+		data.erase("path")
+		var target: String = dest + "/" + rel
+		if data.type == "dir":
+			fs.add_dir(target)
+			res.out.append("   creating: %s/" % rel)
+			continue
+		if data.type == "picture" and not data.has("asset"):
+			data.asset = job.picture_dir + rel.get_file()
+		fs.add_file(target, data)
+		res.out.append("  inflating: %s" % rel)
+
+
+func _su(args: Array, res: Dictionary) -> void:
+	var target: String = "root" if args.is_empty() else args[args.size() - 1]
+	if not users().has(target):
+		res.out.append("su: user %s does not exist" % target)
+		return
+	pending = {"kind": "su", "target": target}
+	res.ask = job.shell.su_password
+
+
+func _sudo(args: Array, res: Dictionary) -> void:
+	if args.is_empty():
+		res.out.append(job.shell.sudo_usage)
+		return
+	var me: Dictionary = users().get(fs.user, {})
+	if fs.user == "root":
+		var inner: Array = args.duplicate()
+		_dispatch(inner.pop_front(), inner, res, [])
+		return
+	if not me.get("sudo", false):
+		res.out.append(job.shell.sudo_denied.format({"user": fs.user}))
+		return
+	pending = {"kind": "sudo", "args": args}
+	res.ask = job.shell.sudo_password.format({"user": fs.user})
+
+
+func _answer(line: String, programs: Array) -> Dictionary:
+	var res := new_result()
+	var p := pending
+	pending = {}
+	match p.kind:
+		"unzip":
+			if line == String(fs.node(p.src).password):
+				_extract(p.src, p.dest, res)
+			else:
+				res.out.append(job.shell.unzip_wrong)
+		"su":
+			if line == String(users()[p.target].get("password", "")):
+				user_stack.append({"user": fs.user, "cwd": cwd})
+				fs.user = p.target
+				cwd = fs.home_of(p.target)
+				fs.add_dir(cwd)
+			else:
+				res.out.append(job.shell.su_wrong)
+		"sudo":
+			if line == String(users().get(fs.user, {}).get("password", "")):
+				var saved: String = fs.user
+				fs.user = "root"
+				var inner: Array = p.args.duplicate()
+				_dispatch(inner.pop_front(), inner, res, programs)
+				fs.user = saved
+			else:
+				res.out.append(job.shell.sudo_wrong)
+	return res

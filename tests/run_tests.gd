@@ -217,6 +217,70 @@ func check_window_tools(d, base: Dictionary) -> void:
 	check(Judge.verdict(d.attachment, jj) == "wrong_shape", "join: wrong order = wrong shape")
 
 
+func late_job(base: Dictionary) -> Dictionary:
+	return JobData.merge(base, {
+		"users": {"you": {"password": "hunter2", "sudo": false}, "marta": {"password": "lighthouse", "sudo": true}},
+		"extra_files": [
+			{"path": "index.txt", "type": "text", "lines": ["page 3: rent", "Page 1: wages", "page 2: coal", "10 boxes", "9 boxes"]},
+			{"path": "ledger.zip", "type": "archive", "password": "1953", "contents": [
+				{"path": "scans", "type": "dir"},
+				{"path": "scans/p1.png", "type": "picture", "open_size": [80, 120]},
+				{"path": "scans/notes.txt", "type": "text", "lines": ["in order please"]}]},
+			{"path": "open.zip", "type": "archive", "contents": [{"path": "a.txt", "type": "text", "lines": ["hi"]}]},
+			{"path": "/home/marta/drill.txt", "type": "text", "private": true, "lines": ["the switch is here"]},
+			{"path": "/home/marta/off.sh", "type": "script", "x": true, "prints": ["ok"]},
+			{"path": "/home/marta/.drill", "type": "dir", "private": true},
+		]})
+
+
+func check_late_commands(base: Dictionary) -> void:
+	var job := late_job(base)
+	var sh = Shell.new(job)
+	check(sh.run("sort index.txt").out == ["10 boxes", "9 boxes", "Page 1: wages", "page 2: coal", "page 3: rent"], "sort: alphabetical, ignores capitals")
+	check(sh.run("sort -r index.txt").out[0] == "page 3: rent", "sort -r")
+	check(sh.run("sort -n index.txt").out.slice(-2) == ["9 boxes", "10 boxes"], "sort -n by leading number")
+	check(sh.run("sort").out == [job.shell.sort_usage], "sort usage")
+	var r: Dictionary = sh.run("unzip ledger.zip")
+	check(r.out[0].contains("Read-only"), "unzip: refuses to write into the client folder")
+	r = sh.run("unzip ledger.zip -d ~")
+	check(r.ask.contains("password") and not sh.pending.is_empty(), "unzip: locked archive asks for a password")
+	r = sh.run("nope")
+	check(r.out == [job.shell.unzip_wrong] and not sh.fs.exists("/home/you/scans/p1.png"), "unzip: wrong password extracts nothing")
+	check(sh.history.back() == "unzip ledger.zip -d ~", "password answers stay out of history")
+	sh.run("unzip ledger.zip -d ~")
+	r = sh.run("1953")
+	check(sh.fs.exists("/home/you/scans/p1.png") and sh.fs.node("/home/you/scans/p1.png").asset.ends_with("p1.png") and r.out.size() == 3, "unzip: right password inflates files and folders")
+	check(sh.run("unzip open.zip -d ~").ask == "" and sh.fs.exists("/home/you/a.txt"), "unzip: unlocked archive needs no password")
+	check(sh.run("cat /home/marta/drill.txt").out[0].ends_with("Permission denied"), "private file of another user")
+	check(sh.run("ls /home/marta/.drill").out == ["ls: cannot open directory '/home/marta/.drill': Permission denied"], "ls a private folder refused")
+	check(sh.run("cd /home/marta/.drill").out == ["cd: /home/marta/.drill: Permission denied"], "cd into a private folder refused")
+	check(sh.run("su ghost").out[0].contains("does not exist"), "su: unknown user")
+	sh.run("su marta")
+	check(sh.run("wrong").out == [job.shell.su_wrong] and sh.fs.user == "you", "su: wrong password")
+	sh.run("su marta")
+	sh.run("lighthouse")
+	check(sh.fs.user == "marta" and sh.cwd == "/home/marta" and sh.prompt() == "marta$", "su: becomes marta, in her home, prompt shows it")
+	check(sh.run("whoami").out == ["marta"] and sh.run("cat drill.txt").out == ["the switch is here"], "su: can read her private files")
+	check(sh.run("./off.sh").out == ["ok"], "su: marta runs her script")
+	check(sh.run("cd .drill").out.is_empty() and sh.cwd == "/home/marta/.drill", "su: owner can enter her private folder")
+	sh.run("cd ~")
+	sh.run("exit")
+	check(sh.fs.user == "you" and sh.prompt() == "$", "exit: back to you")
+	check(sh.run("exit").out == [job.shell.exit_last], "exit with nowhere to go")
+	check(sh.run("sudo cat /home/marta/drill.txt").out[0].contains("sudoers"), "sudo: you aren't allowed")
+	sh.run("su marta")
+	sh.run("lighthouse")
+	r = sh.run("sudo cat /clients/dex/notes.txt")
+	check(r.ask == "[sudo] password for marta:", "sudo: asks for your own password")
+	r = sh.run("lighthouse")
+	check(r.out.size() == 30 and sh.fs.user == "marta", "sudo: runs one command, then back to marta")
+	sh.run("sudo mv /clients/dex/notes.txt /clients/dex/n.txt")
+	sh.run("lighthouse")
+	check(sh.fs.exists("/clients/dex/n.txt"), "sudo: root can change client folders")
+	sh.run("sudo ls")
+	check(sh.run("bad").out == [job.shell.sudo_wrong], "sudo: wrong password")
+
+
 func _initialize() -> void:
 	var c := JobData.load_campaign("res://data/campaign.json")
 	check(c.jobs.size() == 2, "campaign has 2 jobs")
@@ -274,6 +338,7 @@ func _initialize() -> void:
 	check(amb.options.size() == 5, "tab: lists options when stuck")
 	check_file_system(job)
 	check_permissions(job)
+	check_late_commands(job)
 	var sh2 = Shell.new(c.jobs[1])
 	r = sh2.run("grep Gold notes.txt")
 	check(r.out.is_empty(), "job 2: notes.txt only has lowercase gold")
@@ -350,6 +415,18 @@ func _initialize() -> void:
 	d2.run_command("ps")
 	check(d2.term.output.get_parsed_text().contains("pixview chart.png"), "desktop: ps lists viewers")
 	check_window_tools(d2, c.jobs[0])
+	d2.load_job(late_job(c.jobs[0]))
+	d2.run_command("su marta")
+	check(d2.term.input.secret, "desktop: password input is hidden")
+	d2.run_command("lighthouse")
+	check(not d2.term.input.secret and d2.term.prompt_label.text == "marta$", "desktop: prompt shows the user")
+	check(not d2.term.output.get_parsed_text().contains("lighthouse"), "desktop: password never printed")
+	check(d2.running_programs().any(func(p): return p.cmd == "radio"), "radio is a running program")
+	d2.run_command("kill 103")
+	check(not main.sfx.music.playing and not main.sfx.music_on, "kill the radio stops the music")
+	check(not d2.running_programs().any(func(p): return p.cmd == "radio"), "radio gone from ps")
+	d2._toggle_music()
+	check(main.sfx.music.playing, "radio button brings it back")
 	main.show_end("x")
 	await process_frame
 	main.current.again.emit()

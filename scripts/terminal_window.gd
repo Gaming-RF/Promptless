@@ -6,6 +6,7 @@ signal tab_requested(text)
 
 var output := RichTextLabel.new()
 var input := LineEdit.new()
+var prompt_label: Label
 var _history: Array = []
 var _history_pos := 0
 
@@ -24,7 +25,8 @@ func build(prompt_text: String, s: Vector2) -> void:
 	output.add_theme_color_override("default_color", Palette.TERM_TEXT)
 	content.add_child(output)
 	var row := HBoxContainer.new()
-	row.add_child(UI.label(prompt_text, UI.FONT_SIZE, Palette.TERM_TEXT))
+	prompt_label = UI.label(prompt_text, UI.FONT_SIZE, Palette.TERM_TEXT)
+	row.add_child(prompt_label)
 	input.size_flags_horizontal = SIZE_EXPAND_FILL
 	input.caret_blink = true
 	if "keep_editing_on_text_submit" in input:
@@ -85,9 +87,17 @@ func _on_input_key(e: InputEvent) -> void:
 
 
 func _on_submit(t: String) -> void:
-	if not t.strip_edges().is_empty():
+	if not t.strip_edges().is_empty() and not input.secret:
 		_history.append(t)
 	_history_pos = _history.size()
 	input.clear()
 	command_entered.emit(t)
 	focus_input()
+
+
+func set_prompt(t: String) -> void:
+	prompt_label.text = t
+
+
+func set_secret(on: bool) -> void:
+	input.secret = on

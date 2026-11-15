@@ -34,9 +34,10 @@
 			"open_text": "{n} lines of chaos. Try grep.",
 			"help": [
 				"needed: ls grep open cd man",
-				"        cp chmod kill",
-				"also: cat head less echo pwd",
-				"      history alias ps clear mv",
+				"        cp chmod kill sort unzip",
+				"        su sudo",
+				"also: cat head less echo pwd whoami",
+				"      history alias ps clear mv exit",
 				"Tab completes. Up/Down = history.",
 				"man COMMAND explains one."
 			],
@@ -127,13 +128,50 @@
 					"  kill PID",
 					"  Stop a program. Every window shows",
 					"  its number in the title bar. See ps."
+				],
+				"sort": [
+					"SORT(1)",
+					"  sort [-r] [-n] FILE",
+					"  Print a file's lines in order.",
+					"  -r   reverse   -n   by number"
+				],
+				"unzip": [
+					"UNZIP(1)",
+					"  unzip FILE [-d FOLDER]",
+					"  Unpack an archive here, or into FOLDER.",
+					"  Locked archives ask for a password."
+				],
+				"su": [
+					"SU(1)",
+					"  su USER",
+					"  Become USER. Asks for USER's password.",
+					"  exit   go back to being you"
+				],
+				"sudo": [
+					"SUDO(1)",
+					"  sudo COMMAND",
+					"  Run one command as administrator.",
+					"  Asks for YOUR password, and only works",
+					"  for users who are allowed."
 				]
 			},
 			"cp_usage": "usage: cp FILE DEST",
 			"chmod_usage": "usage: chmod +x FILE",
 			"kill_usage": "usage: kill PID   (the number in a window's title bar)",
 			"kill_protected": "kill: ({pid}) - not that one. {cmd} is holding this whole machine together.",
-			"open_script": "open: {file} is a script. run it with ./{file}"
+			"open_script": "open: {file} is a script. run it with ./{file}",
+			"sort_usage": "usage: sort [-r] [-n] FILE",
+			"unzip_usage": "usage: unzip FILE [-d FOLDER]",
+			"unzip_readonly": "unzip: cannot write to {dir}: Read-only file system. try: -d ~",
+			"unzip_password": "[{file}] {entry} password:",
+			"unzip_wrong": "unzip: incorrect password",
+			"su_password": "Password:",
+			"su_wrong": "su: Authentication failure",
+			"sudo_usage": "usage: sudo COMMAND",
+			"sudo_password": "[sudo] password for {user}:",
+			"sudo_wrong": "sudo: 1 incorrect password attempt",
+			"sudo_denied": "{user} is not in the sudoers file. This incident will be reported.",
+			"exit_last": "exit: nowhere to go. this is the only computer that still works."
 		},
 		"ui": {
 			"attach_none": "attach: none (use SNAP)",
@@ -141,9 +179,15 @@
 			"send": "Send",
 			"snap": "SNAP",
 			"reply_prefix": "Re: ",
-			"music_on": "music: on",
-			"music_off": "music: off"
+			"music_on": "radio: on",
+			"music_off": "radio: off"
 		},
-		"home": "/home/you"
+		"home": "/home/you",
+		"users": {
+			"you": {
+				"password": "[your password]",
+				"sudo": false
+			}
+		}
 	}
 }

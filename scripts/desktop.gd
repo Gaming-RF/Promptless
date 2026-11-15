@@ -27,6 +27,7 @@ var _music_btn := Button.new()
 var _group := {}
 var _next_group := 1
 const SNAP_DIST := 6.0
+const RADIO_PID := 103
 
 
 func setup(j: Dictionary, s: Node) -> void:
@@ -76,6 +77,8 @@ func load_job(j: Dictionary) -> void:
 	shell = Shell.new(job)
 	shell.history = old_history
 	shell.fs.import_nodes(old_home)
+	term.set_prompt(shell.prompt())
+	term.set_secret(false)
 	attachment = null
 	finished = false
 	for w in pictures.values():
@@ -97,7 +100,8 @@ func bounce_in(w: Control, final_pos: Vector2) -> void:
 
 
 func run_command(line: String) -> void:
-	term.print_line("%s %s" % [job.shell.prompt, line], Palette.TITLE_TEXT)
+	if shell.pending.is_empty():
+		term.print_line("%s %s" % [shell.prompt(), line], Palette.TITLE_TEXT)
 	var r: Dictionary = shell.run(line, running_programs())
 	if r.clear:
 		term.output.clear()
@@ -107,6 +111,10 @@ func run_command(line: String) -> void:
 		term.print_line(h, Palette.DIM)
 	if r.open != "":
 		open_picture(r.open)
+	if r.ask != "":
+		term.print_line(r.ask, Palette.TITLE_TEXT)
+	term.set_secret(not shell.pending.is_empty())
+	term.set_prompt(shell.prompt())
 	if r.kill != 0:
 		kill(r.kill)
 	if not r.launch.is_empty():
@@ -119,6 +127,8 @@ func running_programs() -> Array:
 		{"pid": term.pid, "cmd": "sh", "protected": true},
 		{"pid": email.pid, "cmd": "mail", "protected": true},
 	]
+	if sfx.music_on and sfx.music.stream != null:
+		list.append({"pid": RADIO_PID, "cmd": "radio"})
 	for key in pictures:
 		var w = pictures[key]
 		list.append({"pid": w.pid, "cmd": "%s %s" % [job.shell.viewer, w.file.get_file()]})
@@ -126,6 +136,10 @@ func running_programs() -> Array:
 
 
 func kill(pid: int) -> void:
+	if pid == RADIO_PID:
+		if sfx.music_on:
+			_toggle_music()
+		return
 	for key in pictures.keys():
 		if pictures[key].pid == pid:
 			_group.erase(pictures[key])

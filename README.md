@@ -39,16 +39,20 @@ To swap one, replace the file with the same name and re-import:
 - Clicking the red command in the email pastes it into the terminal (job 1 only).
 - Terminal: Tab completes commands and file names; Up/Down recall history.
 - Jobs only need `ls`, `grep`, `open`. Later-chapter commands also work: `cd`, `ls -a`, `ls -l`,
-  `man`, `cp`, `chmod`, `kill PID` (every window shows its PID in the title bar) and `./script`. Also working, Linux-style: `help cat head less echo pwd
+  `man`, `cp`, `chmod`, `kill PID` (every window shows its PID in the title bar), `./script`,
+  `sort`, `unzip`, `su`, `sudo`, `exit`, `whoami`. Password prompts hide what you type.
+  The music is a program too: `kill 103` stops the radio. Also working, Linux-style: `help cat head less echo pwd
   history alias ps clear mv` (`mv` says the client folder is read-only; `alias` shows `open` is
   the previous owner's shortcut). Typos get "did you mean".
 - Files: client folders are read-only; your home folder (`~`) is writable and every SNAP is
   saved there (`ls ~`, `open ~/snapshot_1.png`). Jobs can add folders and hidden files with
   `extra_files` in their JSON (`"r": false` = unreadable, `"type": "script"` with `"opens"` and
   `"copies"` = a runnable script that opens picture windows).
-- "music: on/off" button bottom-right.
+- "radio: on/off" button bottom-right.
 - Picture windows can be dragged by the picture itself, not just the title bar.
 - Window tools a job can switch on with `"tools"`: `"trace"` (TRACE button: see-through tracing
   mode) and `"join"` (pictures dragged edge to edge snap together and move as one). A job's
   `"check"` picks the win rule: `stretch` (default), `overlay` (`"overlay": {top, under, align}`)
   or `join` (`"join": {"order": [...]}`).
+- More job data: `"users"` (password, `sudo`, home), files with `"private": true`, archives
+  (`"type": "archive"`, optional `"password"`, `"contents"`).
