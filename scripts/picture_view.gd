@@ -2,8 +2,33 @@ extends Control
 
 const Palette = preload("res://scripts/palette.gd")
 
+const TRACE_SHADER := """
+shader_type canvas_item;
+uniform float threshold = 0.45;
+void fragment() {
+	vec4 c = COLOR;
+	float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+	if (l > threshold) {
+		c.a = 0.0;
+	}
+	COLOR = c;
+}
+"""
+
 var texture: Texture2D
 var variant := 0
+var tracing := false:
+	set(v):
+		tracing = v
+		if v:
+			var sh := Shader.new()
+			sh.code = TRACE_SHADER
+			var m := ShaderMaterial.new()
+			m.shader = sh
+			material = m
+		else:
+			material = null
+		queue_redraw()
 
 
 func _ready() -> void:
@@ -11,7 +36,7 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-	paint(self, Rect2(Vector2.ZERO, size), texture, variant, true)
+	paint(self, Rect2(Vector2.ZERO, size), texture, variant, not tracing)
 
 
 static func paint(ci: CanvasItem, r: Rect2, tex: Texture2D, v: int, with_bg: bool) -> void:

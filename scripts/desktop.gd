@@ -24,6 +24,9 @@ var attachment = null
 var snap_count := 0
 var finished := false
 var _music_btn := Button.new()
+var _group := {}
+var _next_group := 1
+const SNAP_DIST := 6.0
 
 
 func setup(j: Dictionary, s: Node) -> void:
@@ -78,6 +81,7 @@ func load_job(j: Dictionary) -> void:
 	for w in pictures.values():
 		w.queue_free()
 	pictures.clear()
+	_group.clear()
 	email.show_job(job)
 	bounce_in(email, EMAIL_POS)
 	term.print_line(job.shell.welcome.format({"folder": job.folder}), Palette.DIM)
@@ -124,9 +128,85 @@ func running_programs() -> Array:
 func kill(pid: int) -> void:
 	for key in pictures.keys():
 		if pictures[key].pid == pid:
+			_group.erase(pictures[key])
 			pictures[key].queue_free()
 			pictures.erase(key)
 			return
+
+
+func has_tool(t: String) -> bool:
+	return t in job.get("tools", [])
+
+
+func group_of(w) -> Array:
+	if not _group.has(w):
+		return [w]
+	var g: int = _group[w]
+	return pictures.values().filter(func(o): return _group.get(o, -1) == g)
+
+
+func _on_window_moved(w, delta: Vector2) -> void:
+	for o in group_of(w):
+		if o != w:
+			o.position += delta
+
+
+func _on_drag_finished(w) -> void:
+	if has_tool("join"):
+		try_join(w)
+
+
+func try_join(w) -> bool:
+	var mine := group_of(w)
+	for o in pictures.values():
+		if o in mine:
+			continue
+		var a: Rect2 = w.get_rect()
+		var b: Rect2 = o.get_rect()
+		var offset := Vector2.INF
+		var overlap_y := a.position.y < b.end.y and b.position.y < a.end.y
+		var overlap_x := a.position.x < b.end.x and b.position.x < a.end.x
+		if overlap_y and absf(a.end.x - b.position.x) <= SNAP_DIST:
+			offset = Vector2(b.position.x - a.end.x, 0)
+		elif overlap_y and absf(b.end.x - a.position.x) <= SNAP_DIST:
+			offset = Vector2(b.end.x - a.position.x, 0)
+		elif overlap_x and absf(a.end.y - b.position.y) <= SNAP_DIST:
+			offset = Vector2(0, b.position.y - a.end.y)
+		elif overlap_x and absf(b.end.y - a.position.y) <= SNAP_DIST:
+			offset = Vector2(0, b.end.y - a.position.y)
+		if offset == Vector2.INF:
+			continue
+		if offset.x != 0 and absf(a.position.y - b.position.y) <= SNAP_DIST:
+			offset.y = b.position.y - a.position.y
+		elif offset.y != 0 and absf(a.position.x - b.position.x) <= SNAP_DIST:
+			offset.x = b.position.x - a.position.x
+		for m in mine:
+			m.position += offset
+		var g: int = _group.get(o, 0)
+		if g == 0:
+			g = _next_group
+			_next_group += 1
+		for m in mine + group_of(o):
+			_group[m] = g
+		return true
+	return false
+
+
+func capture(w) -> Array:
+	var taken: Array = group_of(w).duplicate()
+	if has_tool("trace"):
+		var grew := true
+		while grew:
+			grew = false
+			for o in pictures.values():
+				if o in taken:
+					continue
+				for t in taken:
+					if (o.tracing or t.tracing) and o.get_rect().intersects(t.get_rect()):
+						taken.append(o)
+						grew = true
+						break
+	return taken
 
 
 var _next_pid := 140
@@ -158,6 +238,10 @@ func open_picture(file: String, extra_copy := false):
 	bounce_in(w, w.position)
 	w.focused.connect(_focus)
 	w.snapshot_requested.connect(snapshot)
+	w.moved.connect(_on_window_moved)
+	w.drag_finished.connect(_on_drag_finished)
+	if has_tool("trace"):
+		w.enable_trace(job.ui.get("trace", "TRACE"), job.ui.get("tracing", "TRACING"))
 	w.set_pid(_next_pid)
 	_next_pid += 1
 	pictures[file if not pictures.has(file) else "%s#%d" % [file, w.pid]] = w
@@ -168,9 +252,20 @@ func open_picture(file: String, extra_copy := false):
 func snapshot(w) -> void:
 	snap_count += 1
 	var s: Vector2 = w.get_content_size()
+	var wins: Array = []
+	for c in capture(w):
+		var cs: Vector2 = c.get_content_size()
+		var cp: Vector2 = c.position + c.content.position
+		wins.append({
+			"file": c.file, "w": cs.x, "h": cs.y, "x": cp.x, "y": cp.y,
+			"z": c.get_index(), "tracing": c.tracing, "group": _group.get(c, 0),
+		})
+	var joined := wins.filter(func(e): return e.group != 0 and e.group == _group.get(w, -1))
+	joined.sort_custom(func(a, b): return a.x < b.x if absf(a.x - b.x) > SNAP_DIST else a.y < b.y)
 	attachment = {
 		"name": "snapshot_%d.png" % snap_count,
-		"windows": [{"file": w.file, "w": s.x, "h": s.y}],
+		"windows": wins,
+		"order": joined.map(func(e): return e.file),
 	}
 	shell.fs.add_file(shell.fs.home + "/" + attachment.name, {
 		"type": "picture",

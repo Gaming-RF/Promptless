@@ -128,5 +128,35 @@ func _initialize() -> void:
 	check(desk.finished, "Send button delivers the win: " + desk.email.last_reply)
 	await create_timer(2.6).timeout
 	check(desk.job.search_word == "Gold" and desk.term.input.has_focus(), "job 2 arrives, terminal still focused")
+	var JobData = load("res://scripts/job_data.gd")
+	var jj = JobData.merge(desk.job, {"tools": ["join", "trace"], "check": "join", "join": {"order": ["p1.png", "p2.png"]},
+		"extra_files": [{"path": "p1.png", "type": "picture", "open_size": [80, 100], "asset": "res://assets/ball_1.png"},
+			{"path": "p2.png", "type": "picture", "open_size": [80, 100], "asset": "res://assets/ball_2.png"}]})
+	desk.load_job(jj)
+	await frames(2)
+	var p1 = desk.open_picture(jj.folder + "/p1.png")
+	var p2 = desk.open_picture(jj.folder + "/p2.png")
+	await create_timer(0.6).timeout
+	p1.position = Vector2(330, 150)
+	p2.position = Vector2(520, 20)
+	await frames(2)
+	var grab: Vector2 = p2.position + p2.size / 2
+	var target: Vector2 = grab + (p1.position + Vector2(p1.size.x + 3, 2) - p2.position)
+	await mouse("move", grab)
+	await mouse("down", grab)
+	for i in range(1, 11):
+		await mouse("move", grab.lerp(target, i / 10.0))
+	await mouse("up", target)
+	check(desk.group_of(p1).size() == 2 and p2.position == p1.position + Vector2(p1.size.x, 0), "mouse drag joins two pages flush")
+	var g1: Vector2 = p1.position + p1.size / 2
+	await mouse("move", g1)
+	await mouse("down", g1)
+	for i in range(1, 6):
+		await mouse("move", g1 + Vector2(0, -6 * i))
+	await mouse("up", g1 + Vector2(0, -30))
+	check(p2.position == p1.position + Vector2(p1.size.x, 0) and p1.position.y == 120, "dragging one page moves the joined pair")
+	var tb: Control = p1._trace_btn
+	await click(tb.get_global_rect().get_center())
+	check(p1.tracing and tb.text == "TRACING", "TRACE button toggles tracing")
 	print("\n%d failure(s)" % fails)
 	quit(1 if fails else 0)

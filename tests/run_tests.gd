@@ -136,6 +136,87 @@ func check_permissions(base: Dictionary) -> void:
 	check(sh.run("kill 140", [{"pid": 140, "cmd": "pixview x"}]).kill == 140, "kill a viewer")
 
 
+func pic(path: String, w: int, h: int, asset: String) -> Dictionary:
+	return {"path": path, "type": "picture", "open_size": [w, h], "asset": asset}
+
+
+func overlay_job(base: Dictionary) -> Dictionary:
+	return JobData.merge(base, {"tools": ["trace"], "check": "overlay",
+		"overlay": {"top": "note.png", "under": "memo.png", "align": 6},
+		"extra_files": [pic("memo.png", 120, 120, "res://assets/ball_2.png"), pic("note.png", 120, 120, "res://assets/ball_1.png")]})
+
+
+func join_job(base: Dictionary) -> Dictionary:
+	return JobData.merge(base, {"tools": ["join"], "check": "join",
+		"join": {"order": ["p1.png", "p2.png", "p3.png"]},
+		"extra_files": [pic("p1.png", 80, 120, "res://assets/ball_1.png"), pic("p2.png", 80, 120, "res://assets/ball_2.png"), pic("p3.png", 80, 120, "res://assets/ball_3.png")]})
+
+
+func check_window_tools(d, base: Dictionary) -> void:
+	d.load_job(base)
+	var b3 = d.open_picture("/clients/dex/ball_3.png")
+	var b1 = d.open_picture("/clients/dex/ball_1.png")
+	b1.position = b3.position
+	d.snapshot(b1)
+	check(d.attachment.windows.size() == 1, "jam jobs: overlapping windows are not captured together")
+	check(not b1._buttons.get_children().any(func(x): return x.text == "TRACE"), "jam jobs: no TRACE button")
+
+	var oj := overlay_job(base)
+	d.load_job(oj)
+	var memo = d.open_picture("/clients/dex/memo.png")
+	var note = d.open_picture("/clients/dex/note.png")
+	note.position = memo.position
+	d.snapshot(note)
+	check(Judge.verdict(d.attachment, oj) == "wrong_file", "overlay: without tracing only one window is captured")
+	note.set_tracing(true)
+	check(note.see_through and note.view.material != null and note._trace_btn.text == "TRACING", "overlay: tracing mode on")
+	d.snapshot(note)
+	check(d.attachment.windows.size() == 2 and Judge.verdict(d.attachment, oj) == "right", "overlay: traced + aligned = right")
+	note.position = memo.position + Vector2(20, 0)
+	d.snapshot(note)
+	check(Judge.verdict(d.attachment, oj) == "wrong_shape", "overlay: misaligned = wrong shape")
+	note.position = memo.position
+	memo.move_to_front()
+	d.snapshot(note)
+	check(Judge.verdict(d.attachment, oj) == "wrong_shape", "overlay: tracing sheet underneath = wrong shape")
+
+	var jj := join_job(base)
+	d.load_job(jj)
+	var p1 = d.open_picture("/clients/dex/p1.png")
+	var p2 = d.open_picture("/clients/dex/p2.png")
+	var p3 = d.open_picture("/clients/dex/p3.png")
+	p1.position = Vector2(330, 40)
+	p2.position = p1.position + Vector2(p1.size.x + 4, 3)
+	d._on_drag_finished(p2)
+	check(p2.position == p1.position + Vector2(p1.size.x, 0), "join: snaps flush and aligned (%s)" % p2.position)
+	check(d.group_of(p1).size() == 2, "join: two windows grouped")
+	p1.position += Vector2(5, 5)
+	d._on_window_moved(p1, Vector2(5, 5))
+	check(p2.position == p1.position + Vector2(p1.size.x, 0), "join: group moves as one")
+	p3.position = p2.position + Vector2(p2.size.x - 3, 200)
+	d._on_drag_finished(p3)
+	check(d.group_of(p3).size() == 1, "join: far window doesn't snap")
+	p3.position = p2.position + Vector2(p2.size.x - 3, -2)
+	d._on_drag_finished(p3)
+	check(d.group_of(p1).size() == 3, "join: chain of three")
+	d.snapshot(p2)
+	check(d.attachment.order == ["/clients/dex/p1.png", "/clients/dex/p2.png", "/clients/dex/p3.png"], "join: record holds page order")
+	check(Judge.verdict(d.attachment, jj) == "right", "join: right order = right")
+	d.load_job(jj)
+	p1 = d.open_picture("/clients/dex/p1.png")
+	p2 = d.open_picture("/clients/dex/p2.png")
+	p2.position = Vector2(330, 40)
+	p1.position = p2.position + Vector2(p2.size.x + 2, 0)
+	d._on_drag_finished(p1)
+	d.snapshot(p1)
+	check(Judge.verdict(d.attachment, jj) == "wrong_file", "join: missing page = wrong file")
+	p3 = d.open_picture("/clients/dex/p3.png")
+	p3.position = p1.position + Vector2(p1.size.x + 2, 0)
+	d._on_drag_finished(p3)
+	d.snapshot(p1)
+	check(Judge.verdict(d.attachment, jj) == "wrong_shape", "join: wrong order = wrong shape")
+
+
 func _initialize() -> void:
 	var c := JobData.load_campaign("res://data/campaign.json")
 	check(c.jobs.size() == 2, "campaign has 2 jobs")
@@ -268,6 +349,7 @@ func _initialize() -> void:
 	check(is_instance_valid(d2.term) and d2.term.output.get_parsed_text().contains("holding this whole machine"), "desktop: terminal can't be killed")
 	d2.run_command("ps")
 	check(d2.term.output.get_parsed_text().contains("pixview chart.png"), "desktop: ps lists viewers")
+	check_window_tools(d2, c.jobs[0])
 	main.show_end("x")
 	await process_frame
 	main.current.again.emit()

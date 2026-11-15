@@ -5,6 +5,9 @@ signal snapshot_requested(win)
 const PictureView = preload("res://scripts/picture_view.gd")
 
 var file := ""
+var tracing := false
+var _trace_btn: Button
+var _trace_text := ["TRACE", "TRACING"]
 var view := PictureView.new()
 var _flash := ColorRect.new()
 var _readout: Label
@@ -14,6 +17,7 @@ var _readout_id := 0
 func setup(file_name: String, tex: Texture2D, variant: int, open_size: Vector2, snap_text: String) -> void:
 	file = file_name
 	resizable = true
+	drag_body = true
 	set_title(file_name.get_file())
 	view.texture = tex
 	view.variant = variant
@@ -33,6 +37,22 @@ func setup(file_name: String, tex: Texture2D, variant: int, open_size: Vector2, 
 	content.add_child(_readout)
 	add_title_button(snap_text, func(): snapshot_requested.emit(self))
 	set_content_size(open_size)
+
+
+func enable_trace(off_text: String, on_text: String) -> void:
+	_trace_text = [off_text, on_text]
+	_trace_btn = add_title_button(off_text, func(): set_tracing(not tracing))
+	_buttons.move_child(_trace_btn, 0)
+	_layout()
+
+
+func set_tracing(on: bool) -> void:
+	tracing = on
+	see_through = on
+	view.tracing = on
+	if _trace_btn:
+		_trace_btn.text = _trace_text[1 if on else 0]
+		_layout()
 
 
 func set_content_size(s: Vector2) -> void:

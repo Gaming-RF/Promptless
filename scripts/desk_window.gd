@@ -1,6 +1,8 @@
 extends Control
 
 signal focused(win)
+signal moved(win, delta)
+signal drag_finished(win)
 
 const Palette = preload("res://scripts/palette.gd")
 const UI = preload("res://scripts/ui.gd")
@@ -8,6 +10,11 @@ const TITLE_H := 10
 const GRIP := 5
 
 var resizable := false
+var drag_body := false
+var see_through := false:
+	set(v):
+		see_through = v
+		queue_redraw()
 var min_content := Vector2(24, 24)
 var max_content := Vector2(192, 200)
 var content := Control.new()
@@ -107,9 +114,13 @@ func _layout() -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), Palette.FRAME)
+	if see_through:
+		draw_rect(Rect2(Vector2(0.5, 0.5), size - Vector2.ONE), Palette.FRAME, false, 1.0)
+		draw_rect(Rect2(0, 0, size.x, TITLE_H + 1), Palette.FRAME)
+	else:
+		draw_rect(Rect2(Vector2.ZERO, size), Palette.FRAME)
+		draw_rect(Rect2(1, TITLE_H + 1, size.x - 2, size.y - TITLE_H - 2), Palette.PANEL)
 	draw_rect(Rect2(1, 1, size.x - 2, TITLE_H), Palette.TITLE_ON if active else Palette.TITLE_OFF)
-	draw_rect(Rect2(1, TITLE_H + 1, size.x - 2, size.y - TITLE_H - 2), Palette.PANEL)
 
 
 func _draw_grip() -> void:
@@ -143,17 +154,22 @@ func _gui_input(event: InputEvent) -> void:
 				_mode = "resize"
 				_start_mouse = event.global_position
 				_start_size = content.size
-			elif event.position.y <= TITLE_H + 1:
+			elif event.position.y <= TITLE_H + 1 or drag_body:
 				_mode = "move"
 				_drag_offset = event.position
 			accept_event()
 		else:
+			if _mode == "move":
+				drag_finished.emit(self)
 			_mode = ""
 	elif event is InputEventMouseMotion:
 		match _mode:
 			"move":
+				var before := position
 				position = (event.global_position - get_parent().global_position - _drag_offset).round()
 				keep_on_screen()
+				if position != before:
+					moved.emit(self, position - before)
 			"resize":
 				var d: Vector2 = event.global_position - _start_mouse
 				set_content_size(_start_size + d * _edges)
