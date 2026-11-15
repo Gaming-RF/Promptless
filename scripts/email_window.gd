@@ -1,6 +1,6 @@
 extends "res://scripts/desk_window.gd"
 ## Mail window: the client's email, replies appended below, and a reply bar
-## with the current attachment and a Send button.
+## with the current attachment and a Send button. Built once; show_job() refills it.
 
 signal command_clicked(cmd)
 signal send_pressed
@@ -11,37 +11,35 @@ var attach_label: Label
 var portrait := TextureRect.new()
 var last_reply := ""
 var _placeholder: Label
+var _from: Label
+var _subj: Label
+var _send := Button.new()
 
 
-func build(j: Dictionary, s: Vector2) -> void:
-	job = j
+func build(s: Vector2) -> void:
 	set_title("mail")
 	set_content_size(s)
-	# header: 32x32 portrait + from/subject
 	portrait.position = Vector2(2, 2)
 	portrait.size = Vector2(32, 32)
 	portrait.stretch_mode = TextureRect.STRETCH_SCALE
 	content.add_child(portrait)
-	_placeholder = UI.label(job.client.name.to_upper(), UI.FONT_SIZE, Palette.TITLE_TEXT)
+	_placeholder = UI.label("", UI.FONT_SIZE, Palette.TITLE_TEXT)
 	_placeholder.position = portrait.position
 	_placeholder.size = portrait.size
 	_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	content.add_child(_placeholder)
-	var from := UI.label("From: " + job.email.from)
-	from.position = Vector2(38, 4)
-	content.add_child(from)
-	var subj := UI.label("Subject: " + job.email.subject)
-	subj.position = Vector2(38, 16)
-	content.add_child(subj)
-	# body
+	_from = UI.label("")
+	_from.position = Vector2(38, 4)
+	content.add_child(_from)
+	_subj = UI.label("")
+	_subj.position = Vector2(38, 16)
+	content.add_child(_subj)
 	body.bbcode_enabled = true
 	body.position = Vector2(2, 37)
 	body.size = Vector2(s.x - 4, s.y - 37 - 16)
 	body.meta_clicked.connect(func(m): command_clicked.emit(job.email.clickable[int(str(m))]))
-	body.text = _format_body()
 	content.add_child(body)
-	# reply bar
 	var line := ColorRect.new()
 	line.color = Palette.FRAME
 	line.position = Vector2(0, s.y - 15)
@@ -52,16 +50,26 @@ func build(j: Dictionary, s: Vector2) -> void:
 	attach_label.size = Vector2(s.x - 44, 12)
 	attach_label.clip_text = true
 	content.add_child(attach_label)
-	var send := Button.new()
-	send.text = job.ui.send
-	send.focus_mode = FOCUS_NONE
-	send.add_theme_color_override("font_color", Palette.CLICK)
-	send.add_theme_color_override("font_hover_color", Palette.CLICK)
-	send.add_theme_stylebox_override("normal", UI.flat(Palette.BUTTON, Palette.CLICK, 1, 3))
-	send.pressed.connect(func(): send_pressed.emit())
-	content.add_child(send)
-	send.reset_size()
-	send.position = Vector2(s.x - send.size.x - 2, s.y - 13)
+	_send.focus_mode = FOCUS_NONE
+	_send.add_theme_color_override("font_color", Palette.CLICK)
+	_send.add_theme_color_override("font_hover_color", Palette.CLICK)
+	_send.add_theme_stylebox_override("normal", UI.flat(Palette.BUTTON, Palette.CLICK, 1, 3))
+	_send.pressed.connect(func(): send_pressed.emit())
+	content.add_child(_send)
+
+
+func show_job(j: Dictionary) -> void:
+	job = j
+	_placeholder.text = job.client.name.to_upper()
+	_from.text = "From: " + job.email.from
+	_subj.text = "Subject: " + job.email.subject
+	body.text = _format_body()
+	body.scroll_to_line(0)
+	_send.text = job.ui.send
+	_send.reset_size()
+	var s := get_content_size()
+	_send.position = Vector2(s.x - _send.size.x - 2, s.y - 13)
+	last_reply = ""
 	clear_attachment()
 	set_mood("panic")
 
@@ -70,8 +78,6 @@ func set_mood(mood: String) -> void:
 	var tex = UI.find([job.client.get("portrait_" + mood, "")])
 	portrait.texture = tex
 	_placeholder.visible = tex == null
-	if tex == null:
-		portrait.texture = null
 	queue_redraw()
 
 

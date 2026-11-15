@@ -1,13 +1,18 @@
 # Promptless: Bounce Back (jam build, Godot 4.7)
 
-One job, ~90 seconds: read Dex's email -> `grep Comets notes.txt` -> `open ball_3.png`
--> stretch the window until the ball is round -> SNAP -> Send.
+Two jobs, ~3 minutes. Job 1: read Dex's email -> `grep Comets notes.txt` -> `open ball_3.png`
+-> stretch the window until the ball is round -> SNAP -> Send. Job 2 (the medal) lands on the
+same desktop: same pattern, two text files, eight photos, nothing clickable.
 
 - **Run:** `godot --path .` (or F5 in the editor)
 - **Tests:** `godot --headless --path . -s tests/run_tests.gd` (logic + desktop) and
   `godot --headless --path . -s tests/input_test.gd` (real key/mouse events, full 90-second path)
-- **Theme:** everything themed (email, notes, file names, answer, target size, replies,
-  shell lines) is in `data/job_bounce_back.json`. No themed strings live in `scripts/`.
+- **Content:** `data/campaign.json` holds the title, end screen, music, job order and shared
+  strings (`defaults`, merged into every job). Each job is one file (`data/job_*.json`): email,
+  search word, text files, pictures, answer, target size, replies. Add a job = add a file and
+  list it in `campaign.json`. No themed strings live in `scripts/`.
+  `tests/run_tests.gd` checks every job against the plan's rules (one grep hit, email <60 words,
+  replies <30, every picture opens with one side at the target).
 - **Web export:** install export templates, then Project > Export > Web (preset included;
   it already ships `data/*.json`).
 
@@ -31,4 +36,6 @@ To swap one, replace the file with the same name and re-import:
 ## Controls
 - Drag title bars to move; drag a picture's right/bottom edge or corner to stretch.
 - Click a picture, then arrow keys resize 1px (Shift: 8px).
-- Clicking the red command in the email pastes it into the terminal.
+- Clicking the red command in the email pastes it into the terminal (job 1 only).
+- Terminal: Tab completes commands and file names; Up/Down recall history.
+- "music: on/off" button bottom-right.

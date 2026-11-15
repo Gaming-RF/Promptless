@@ -9,3 +9,7 @@ CLAUDE.local.md
 .mcp.json
 AGENTS.md
 .mimocode/
+
+# Exports
+build/
+*.zip

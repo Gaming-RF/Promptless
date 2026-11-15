@@ -75,15 +75,25 @@ func _initialize() -> void:
 	var desk = main.current
 	check(desk.get_script().resource_path.ends_with("desktop.gd"), "Enter on title boots the desktop")
 
+	await create_timer(0.6).timeout # let the mail window bounce in
 	# Click the red command in the email (game coords measured from a screenshot).
 	await click(Vector2(200, 114))
 	check(desk.term.input.text == "grep Comets notes.txt", "email link pastes full command: '%s'" % desk.term.input.text)
 	await key(KEY_ENTER)
 	check("ball 3. Coach" in term_text(desk), "Enter runs grep")
 
-	await type_text("open ball_3.png")
+	await type_text("open ball_")
+	await key(KEY_TAB)
+	check(desk.term.input.text == "open ball_" and desk.term.input.has_focus(), "Tab with 5 matches keeps focus, lists options")
+	await type_text("3")
+	await key(KEY_TAB)
+	check(desk.term.input.text == "open ball_3.png ", "Tab completes the file name: '%s'" % desk.term.input.text)
 	await key(KEY_ENTER)
 	check(desk.pictures.has("ball_3.png"), "typed open makes a window")
+	await key(KEY_UP)
+	check(desk.term.input.text == "open ball_3.png ", "Up arrow recalls last command")
+	await key(KEY_DOWN)
+	check(desk.term.input.text == "", "Down arrow returns to empty line")
 	await type_text("ls")
 	await key(KEY_ENTER)
 	check(term_text(desk).count("notes.txt") >= 2, "focus survived submit (typed ls ran)")
@@ -123,5 +133,7 @@ func _initialize() -> void:
 			send = c
 	await click(send.get_global_rect().get_center())
 	check(desk.finished, "Send button delivers the win: " + desk.email.last_reply)
+	await create_timer(2.6).timeout
+	check(desk.job.search_word == "Gold" and desk.term.input.has_focus(), "job 2 arrives, terminal still focused")
 	print("\n%d failure(s)" % fails)
 	quit(1 if fails else 0)

@@ -1,0 +1,46 @@
+{
+	"title": "Promptless: Bounce Back",
+	"tagline": "Every AI went dark. Your old computer didn't.",
+	"boot_button": "boot up",
+	"music": "res://assets/music/loop.ogg",
+	"jobs": [
+		"res://data/job_bounce_back.json",
+		"res://data/job_medal.json"
+	],
+	"end": {
+		"again": "play again",
+		"picture_job": 0
+	},
+	"defaults": {
+		"client": {
+			"name": "Dex",
+			"portrait_calm": "res://assets/dex_calm.png",
+			"portrait_panic": "res://assets/dex_panic.png"
+		},
+		"picture_dir": "res://assets/",
+		"replies": {
+			"no_attachment": "Message bounced back: you forgot the photo??"
+		},
+		"shell": {
+			"prompt": "$",
+			"welcome": "oldbox shell. you are in {folder}",
+			"unknown": "{cmd}: this old box only knows ls, grep and open.",
+			"did_you_mean_cmd": "{cmd}: not found. did you mean {s}?",
+			"did_you_mean_file": "did you mean {s}?",
+			"pipes": "not supported by this shell",
+			"grep_usage": "usage: grep WORD FILE",
+			"grep_no_match": "(nothing matched. grep cares about Capitals.)",
+			"open_usage": "usage: open FILE",
+			"open_text": "{n} lines of chaos. Try grep."
+		},
+		"ui": {
+			"attach_none": "attach: none (use SNAP)",
+			"attach_some": "attach: {name}",
+			"send": "Send",
+			"snap": "SNAP",
+			"reply_prefix": "Re: ",
+			"music_on": "music: on",
+			"music_off": "music: off"
+		}
+	}
+}

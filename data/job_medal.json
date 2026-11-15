@@ -1,0 +1,126 @@
+{
+	"folder": "/clients/dex/newsletter",
+	"email": {
+		"from": "Dex",
+		"subject": "WE WON (help)",
+		"body": "WE WON!! The newsletter needs a photo of our Gold medal by noon and the camera bot squashed all 8 photos. Coach's notes are in coach.txt, mine are in notes.txt. Roommate says grep Gold in both and open the photo it names. Same trick as the ball??\n\nDex",
+		"clickable": []
+	},
+	"search_word": "Gold",
+	"texts": {
+		"coach.txt": [
+			"COACH NOTES - END OF SEASON",
+			"drills that worked: cone weave, wall passes",
+			"drills that did not: anything Leo invented",
+			"Priya = MVP. do not tell her yet",
+			"bus company still owes us a refund",
+			"newsletter wants: score, photo, one quote",
+			"quote: 'we bounced back.' keep it short",
+			"parents' night: bring chairs",
+			"Jordan's whiteboard art is now 'team culture'",
+			"fix the pump. or hide it from Leo",
+			"Gold medal = photo 6. Ref says it's a perfect octagon, 8 equal sides.",
+			"silver last year, so this one means a lot",
+			"order new nets before spring",
+			"Sam: the camera bot is NOT a camera",
+			"thank-you card for the ref (the tall one)",
+			"keep the medal in the trophy case, not the van",
+			"next season starts Feb. rest your ankles",
+			"remember to breathe - Coach"
+		],
+		"notes.txt": [
+			"TEAM NOTES vol. 2 (Jordan STILL means you)",
+			"WE WON. this file is now a shrine",
+			"victory pizza: pineapple ban lifted for one night",
+			"Leo's gold shoes are banned from all photos",
+			"who took the cooler home",
+			"Priya says MVP is a social construct",
+			"Sam: please stop asking the camera bot nicely",
+			"bus home: 9:40, Coach means 9:20",
+			"jersey #12 found. it was on Jordan",
+			"newsletter photo due at noon!!!",
+			"photos are in this folder somewhere",
+			"thank Priya's mum for the cooler (again)",
+			"chant for next year: still bad",
+			"Leo lost the pump again",
+			"party at Sam's? ask Sam's mum first",
+			"the dog has been forgiven",
+			"keep the receipts for the fundraiser",
+			"stretch before the victory lap",
+			"last week's poster is on the fridge now",
+			"whoever reads this: grep both files - roommate"
+		]
+	},
+	"pictures": [
+		{
+			"file": "photo_1.png",
+			"open_size": [
+				144,
+				100
+			]
+		},
+		{
+			"file": "photo_2.png",
+			"open_size": [
+				104,
+				144
+			]
+		},
+		{
+			"file": "photo_3.png",
+			"open_size": [
+				144,
+				72
+			]
+		},
+		{
+			"file": "photo_4.png",
+			"open_size": [
+				88,
+				144
+			]
+		},
+		{
+			"file": "photo_5.png",
+			"open_size": [
+				144,
+				120
+			]
+		},
+		{
+			"file": "photo_6.png",
+			"open_size": [
+				144,
+				84
+			]
+		},
+		{
+			"file": "photo_7.png",
+			"open_size": [
+				120,
+				144
+			]
+		},
+		{
+			"file": "photo_8.png",
+			"open_size": [
+				64,
+				144
+			]
+		}
+	],
+	"answer": "photo_6.png",
+	"target": {
+		"w": 144,
+		"h": 144,
+		"tolerance": 6
+	},
+	"replies": {
+		"right": "PERFECT octagon. coach nodded TWICE. we bounced back and now it's in the newsletter.",
+		"wrong_file": "Message bounced back: that's not our medal.",
+		"wrong_shape": "Message bounced back: coach says that medal got sat on."
+	},
+	"shell": {
+		"grep_no_match": "(nothing in that file. Coach keeps his own notes.)"
+	}
+}

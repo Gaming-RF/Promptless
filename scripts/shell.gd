@@ -2,6 +2,8 @@ extends RefCounted
 ## The pretend shell. Reads one typed line and returns what to print.
 ## It never touches windows: it returns {"open": file} and the desktop does the rest.
 
+const COMMANDS := ["grep", "ls", "open"]
+
 var job: Dictionary
 var _token_re := RegEx.new()
 
@@ -12,7 +14,7 @@ func _init(j: Dictionary) -> void:
 
 
 func files() -> Array:
-	var names: Array = [job.notes_file]
+	var names: Array = job.texts.keys()
 	for p in job.pictures:
 		names.append(p.file)
 	names.sort()
@@ -38,8 +40,31 @@ func run(line: String) -> Dictionary:
 		"open":
 			_open(args, res)
 		_:
-			res.out.append(job.shell.unknown.format({"cmd": cmd}))
+			var s := closest(cmd, COMMANDS, 2)
+			if s != "":
+				res.out.append(job.shell.did_you_mean_cmd.format({"cmd": cmd, "s": s}))
+			else:
+				res.out.append(job.shell.unknown.format({"cmd": cmd}))
 	return res
+
+
+## Tab completion: completes the command, then file names. Returns
+## {"line": completed text, "options": [names to list when ambiguous]}.
+func complete(line: String) -> Dictionary:
+	var cut := line.rfind(" ")
+	var head := line.substr(0, cut + 1)
+	var word := line.substr(cut + 1)
+	var pool: Array = COMMANDS if cut == -1 else files()
+	var matches: Array = pool.filter(func(n): return n.begins_with(word))
+	if matches.is_empty():
+		return {"line": line, "options": []}
+	if matches.size() == 1:
+		return {"line": head + matches[0] + " ", "options": []}
+	var prefix: String = matches[0]
+	for m in matches:
+		while not m.begins_with(prefix):
+			prefix = prefix.left(-1)
+	return {"line": head + prefix, "options": matches if prefix == word else []}
 
 
 func tokenize(line: String) -> Array:
@@ -61,6 +86,49 @@ func resolve(name: String) -> String:
 	return name if name in files() else ""
 
 
+## Best file for a mistyped name; "ball 3" (typed as two words) -> "ball_3.png".
+func suggest_file(typed: String) -> String:
+	var norm := typed.strip_edges().replace(" ", "_").to_lower()
+	for f in files():
+		if f.to_lower() == norm or f.get_basename().to_lower() == norm:
+			return f
+	var bases: Array = files().map(func(f): return f.get_basename())
+	var s := closest(norm, files(), 3)
+	if s == "":
+		var b := closest(norm, bases, 2)
+		if b != "":
+			s = files()[bases.find(b)]
+	return s
+
+
+static func closest(word: String, pool: Array, max_dist: int) -> String:
+	var best := ""
+	var best_d := max_dist + 1
+	for p in pool:
+		var d := distance(word.to_lower(), p.to_lower())
+		if d < best_d:
+			best = p
+			best_d = d
+	return best
+
+
+static func distance(a: String, b: String) -> int:
+	var prev: Array = range(b.length() + 1)
+	for i in a.length():
+		var cur: Array = [i + 1]
+		for j in b.length():
+			cur.append(mini(mini(cur[j] + 1, prev[j + 1] + 1), prev[j] + int(a[i] != b[j])))
+		prev = cur
+	return prev[b.length()]
+
+
+func _missing(cmd: String, typed: String, res: Dictionary, whole := "") -> void:
+	res.out.append("%s: %s: No such file or directory" % [cmd, typed])
+	var s := suggest_file(whole if whole != "" else typed)
+	if s != "":
+		res.hint.append(job.shell.did_you_mean_file.format({"s": s}))
+
+
 func _grep(args: Array, res: Dictionary) -> void:
 	var ignore_case := false
 	var rest: Array = []
@@ -79,12 +147,12 @@ func _grep(args: Array, res: Dictionary) -> void:
 	for f in targets:
 		var name := resolve(f)
 		if name == "":
-			res.out.append("grep: %s: No such file or directory" % f)
+			_missing("grep", f, res)
 			missing = true
 			continue
-		if name != job.notes_file:
+		if not job.texts.has(name):
 			continue # pictures hold no text lines
-		for l in job.notes:
+		for l in job.texts[name]:
 			var hit: bool = l.to_lower().contains(word.to_lower()) if ignore_case else l.contains(word)
 			if hit:
 				res.out.append(("%s:%s" % [name, l]) if targets.size() > 1 else l)
@@ -99,8 +167,8 @@ func _open(args: Array, res: Dictionary) -> void:
 		return
 	var name := resolve(args[0])
 	if name == "":
-		res.out.append("open: %s: No such file or directory" % args[0])
-	elif name == job.notes_file:
-		res.out.append(job.shell.open_notes)
+		_missing("open", args[0], res, " ".join(args))
+	elif job.texts.has(name):
+		res.out.append(job.shell.open_text.format({"n": job.texts[name].size()}))
 	else:
 		res.open = name

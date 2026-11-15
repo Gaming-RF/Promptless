@@ -8,6 +8,8 @@ const EXTS := [".wav", ".ogg", ".mp3"]
 
 var _players := {}
 var _last_type := 0
+var music := AudioStreamPlayer.new()
+var music_on := true
 
 
 func _ready() -> void:
@@ -32,3 +34,28 @@ func play(key: String) -> void:
 		_last_type = now
 		p.pitch_scale = randf_range(0.9, 1.1)
 	p.play()
+
+
+## Music must start from a click/key press: browsers block audio before one.
+func start_music(path: String) -> void:
+	if music.playing or not ResourceLoader.exists(path):
+		return
+	var stream = load(path)
+	if "loop" in stream:
+		stream.loop = true
+	music.stream = stream
+	music.volume_db = -10.0
+	if not music.is_inside_tree():
+		add_child(music)
+	if music_on:
+		music.play()
+
+
+func toggle_music() -> bool:
+	music_on = not music_on
+	if music.stream:
+		if music_on:
+			music.play()
+		else:
+			music.stop()
+	return music_on
