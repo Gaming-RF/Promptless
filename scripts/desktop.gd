@@ -11,6 +11,8 @@ const DeskWindow = preload("res://scripts/desk_window.gd")
 const PictureWindow = preload("res://scripts/picture_window.gd")
 const TerminalWindow = preload("res://scripts/terminal_window.gd")
 const EmailWindow = preload("res://scripts/email_window.gd")
+const TextWindow = preload("res://scripts/text_window.gd")
+const StickyWindow = preload("res://scripts/sticky_window.gd")
 
 const EMAIL_POS := Vector2(8, 8)
 
@@ -20,10 +22,14 @@ var shell
 var email
 var term
 var pictures := {}
+var texts := {}
 var attachment = null
 var snap_count := 0
 var finished := false
+var strikes := 0
+var base_job: Dictionary
 var _music_btn := Button.new()
+var sticky
 var _group := {}
 var _next_group := 1
 const SNAP_DIST := 6.0
@@ -62,6 +68,12 @@ func _ready() -> void:
 	term.typed.connect(func(): sfx.play("type"))
 	term.focused.connect(_focus)
 
+	sticky = StickyWindow.new()
+	add_child(sticky)
+	sticky.focused.connect(_focus)
+	sticky.line_clicked.connect(func(t): term.paste(t))
+	sticky.visible = false
+
 	_music_btn.focus_mode = FOCUS_NONE
 	_music_btn.pressed.connect(_toggle_music)
 	add_child(_music_btn)
@@ -70,8 +82,10 @@ func _ready() -> void:
 	load_job(job)
 
 
-func load_job(j: Dictionary) -> void:
-	job = j
+func load_job(j: Dictionary, avoid := "") -> void:
+	base_job = j
+	job = JobData.instantiate(j, avoid)
+	strikes = 0
 	var old_history: Array = shell.history if shell else []
 	var old_home: Dictionary = shell.fs.export_under(shell.fs.home) if shell else {}
 	shell = Shell.new(job)
@@ -85,8 +99,16 @@ func load_job(j: Dictionary) -> void:
 		w.queue_free()
 	pictures.clear()
 	_group.clear()
+	for w in texts.values():
+		w.queue_free()
+	texts.clear()
 	email.show_job(job)
 	bounce_in(email, EMAIL_POS)
+	var note: Dictionary = job.get("sticky", {})
+	sticky.visible = not note.is_empty()
+	if sticky.visible:
+		sticky.show_lines(job.ui.get("sticky_title", "note"), note.lines, note.get("paste", false))
+		sticky.position = Vector2(640 - sticky.size.x - 6, 360 - 26 - sticky.size.y)
 	term.print_line(job.shell.welcome.format({"folder": job.folder}), Palette.DIM)
 	_focus(term)
 	term.focus_input.call_deferred()
@@ -110,7 +132,10 @@ func run_command(line: String) -> void:
 	for h in r.hint:
 		term.print_line(h, Palette.DIM)
 	if r.open != "":
-		open_picture(r.open)
+		if shell.fs.node(r.open).get("type", "") == "text":
+			open_text(r.open)
+		else:
+			open_picture(r.open)
 	if r.ask != "":
 		term.print_line(r.ask, Palette.TITLE_TEXT)
 	term.set_secret(not shell.pending.is_empty())
@@ -132,7 +157,27 @@ func running_programs() -> Array:
 	for key in pictures:
 		var w = pictures[key]
 		list.append({"pid": w.pid, "cmd": "%s %s" % [job.shell.viewer, w.file.get_file()]})
+	for key in texts:
+		list.append({"pid": texts[key].pid, "cmd": "%s %s" % [job.shell.get("text_viewer", "textview"), key.get_file()]})
 	return list
+
+
+func open_text(path: String):
+	if texts.has(path):
+		_focus(texts[path], false)
+		return texts[path]
+	var w = TextWindow.new()
+	add_child(w)
+	w.setup(path, shell.fs.node(path).lines, Vector2(150, 130))
+	w.position = Vector2(326 + 12 * (texts.size() % 4), 196 + 8 * (texts.size() % 4))
+	w.keep_on_screen()
+	bounce_in(w, w.position)
+	w.focused.connect(_focus)
+	w.set_pid(_next_pid)
+	_next_pid += 1
+	texts[path] = w
+	_focus(w, false)
+	return w
 
 
 func kill(pid: int) -> void:
@@ -140,6 +185,11 @@ func kill(pid: int) -> void:
 		if sfx.music_on:
 			_toggle_music()
 		return
+	for key in texts.keys():
+		if texts[key].pid == pid:
+			texts[key].queue_free()
+			texts.erase(key)
+			return
 	for key in pictures.keys():
 		if pictures[key].pid == pid:
 			_group.erase(pictures[key])
@@ -294,7 +344,16 @@ func send() -> void:
 	if finished:
 		return
 	var v: String = Judge.verdict(attachment, job)
-	var reply: String = job.replies[v]
+	var reply: String = JobData.pick(job.replies[v], strikes)
+	if v != "right" and v != "no_attachment":
+		strikes += 1
+		if job.has("strikes") and strikes >= int(job.strikes):
+			email.add_reply(JobData.pick(job.replies.give_up, 0))
+			finished = true
+			sfx.play("mail")
+			var old_answer: String = job.answer
+			get_tree().create_timer(2.2).timeout.connect(func(): load_job(base_job, old_answer))
+			return
 	email.add_reply(reply)
 	if v == "right":
 		finished = true

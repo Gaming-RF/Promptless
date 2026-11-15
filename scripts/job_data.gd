@@ -54,3 +54,25 @@ static func picture_index(job: Dictionary, file: String) -> int:
 
 static func picture_texture(job: Dictionary, file: String) -> Texture2D:
 	return UIRef.find([job.picture_dir + file])
+
+
+static func instantiate(job: Dictionary, avoid := "") -> Dictionary:
+	var j := job.duplicate(true)
+	if j.get("shuffle", false):
+		var choices: Array = j.pictures.map(func(p): return p.file).filter(func(f): return f != avoid)
+		if not choices.is_empty():
+			j.answer = choices[randi() % choices.size()]
+	var re := RegEx.new()
+	re.compile("([0-9]+)[^0-9]*$")
+	var m := re.search(String(j.answer).get_file())
+	var n := str(m.get_string(1).to_int()) if m else ""
+	for f in j.texts:
+		j.texts[f] = j.texts[f].map(func(l): return String(l).replace("{answer_n}", n))
+	j.email.body = String(j.email.body).replace("{answer_n}", n)
+	return j
+
+
+static func pick(reply, strike: int) -> String:
+	if reply is Array:
+		return reply[mini(strike, reply.size() - 1)]
+	return reply

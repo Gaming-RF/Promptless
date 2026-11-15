@@ -281,6 +281,51 @@ func check_late_commands(base: Dictionary) -> void:
 	check(sh.run("bad").out == [job.shell.sudo_wrong], "sudo: wrong password")
 
 
+func check_runner(d, base: Dictionary) -> void:
+	d.load_job(base)
+	check(not d.sticky.visible, "jam: no sticky note")
+	d.run_command("open notes.txt")
+	check(d.texts.is_empty(), "jam: no text viewer")
+	d.load_job(JobData.merge(base, {"tools": ["textview"]}))
+	d.run_command("open notes.txt")
+	check(d.texts.size() == 1 and d.texts.values()[0].body.get_parsed_text().contains("Comets game ball"), "textview: open shows the file")
+	check(d.texts.values()[0]._title_label.text.ends_with("notes.txt"), "textview: titled with PID + name")
+	check(d.running_programs().any(func(p): return p.cmd == "textview notes.txt"), "textview: in ps")
+	d.run_command("kill %d" % d.texts.values()[0].pid)
+	check(d.texts.is_empty(), "textview: kill closes it")
+
+	d.load_job(JobData.merge(base, {"sticky": {"lines": ["ls", "grep WORD FILE", "open FILE"], "paste": true}}))
+	check(d.sticky.visible and d.sticky.box.get_child_count() == 3, "sticky: shows learned commands")
+	d.sticky.box.get_child(1).pressed.emit()
+	check(d.term.input.text == "grep ", "sticky: click pastes the command")
+	d.load_job(JobData.merge(base, {"sticky": {"lines": ["ls", "cd FOLDER"], "paste": false}}))
+	await process_frame
+	check(d.sticky.box.get_children().filter(func(c): return not c.is_queued_for_deletion()).all(func(c): return c is Label), "sticky: read-only later")
+
+	var sj := JobData.merge(base, {"strikes": 3, "shuffle": true,
+		"texts": {"notes.txt": ["junk", "Comets game ball = ball {answer_n}."]},
+		"replies": {"wrong_file": ["that's not it. is it?", "not that one either??", "no"], "give_up": "ok i'll ask someone else"}})
+	d.load_job(sj)
+	var first: String = d.job.answer
+	var n1 := first.get_basename().get_slice("_", 1)
+	check(d.shell.run("grep Comets notes.txt").out == ["Comets game ball = ball %s." % n1], "shuffle: notes name the current answer")
+	var wrong: String = "ball_1.png" if first != "ball_1.png" else "ball_2.png"
+	var ww = d.open_picture(d.job.folder + "/" + wrong)
+	var replies: Array = []
+	for i in 3:
+		d.snapshot(ww)
+		d.send()
+		replies.append(d.email.last_reply)
+	check(replies == ["that's not it. is it?", "not that one either??", "ok i'll ask someone else"], "strikes: shorter, more panicked, then gives up: " + str(replies))
+	d.send()
+	check(d.email.last_reply == "ok i'll ask someone else", "strikes: no more sends after giving up")
+	await create_timer(2.4).timeout
+	check(d.job.answer != first and d.strikes == 0 and not d.finished and d.pictures.is_empty(), "strikes: job restarts with a new answer")
+	var n2 := String(d.job.answer).get_basename().get_slice("_", 1)
+	check(d.shell.run("grep Comets notes.txt").out == ["Comets game ball = ball %s." % n2], "shuffle: notes updated after restart")
+	check(Judge.verdict({"windows": [{"file": d.job.folder + "/" + first, "w": 160, "h": 160}]}, d.job) == "wrong_file", "shuffle: the old answer is now wrong")
+
+
 func _initialize() -> void:
 	var c := JobData.load_campaign("res://data/campaign.json")
 	check(c.jobs.size() == 2, "campaign has 2 jobs")
@@ -415,6 +460,7 @@ func _initialize() -> void:
 	d2.run_command("ps")
 	check(d2.term.output.get_parsed_text().contains("pixview chart.png"), "desktop: ps lists viewers")
 	check_window_tools(d2, c.jobs[0])
+	await check_runner(d2, c.jobs[0])
 	d2.load_job(late_job(c.jobs[0]))
 	d2.run_command("su marta")
 	check(d2.term.input.secret, "desktop: password input is hidden")

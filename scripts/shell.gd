@@ -361,7 +361,10 @@ func _open(args: Array, res: Dictionary) -> void:
 	elif n.type == "script":
 		res.out.append(job.shell.open_script.format({"file": args[0]}))
 	elif n.type == "text":
-		res.out.append(job.shell.open_text.format({"n": n.lines.size()}))
+		if "textview" in job.get("tools", []):
+			res.open = path
+		else:
+			res.out.append(job.shell.open_text.format({"n": n.lines.size()}))
 	else:
 		res.open = path
 

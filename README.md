@@ -54,5 +54,7 @@ To swap one, replace the file with the same name and re-import:
   mode) and `"join"` (pictures dragged edge to edge snap together and move as one). A job's
   `"check"` picks the win rule: `stretch` (default), `overlay` (`"overlay": {top, under, align}`)
   or `join` (`"join": {"order": [...]}`).
+- Job runner data: `"strikes": 3` + reply lists + `"give_up"`; `"shuffle": true` with `{answer_n}`
+  in notes/email; `"sticky": {"lines", "paste"}`; `"tools": ["textview"]` opens text files in a window.
 - More job data: `"users"` (password, `sudo`, home), files with `"private": true`, archives
   (`"type": "archive"`, optional `"password"`, `"contents"`).
