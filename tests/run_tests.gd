@@ -102,6 +102,40 @@ func check_file_system(base: Dictionary) -> void:
 	check(sh.complete("open .album/fa").line == "open .album/faded_1.png ", "tab: completes inside a folder path")
 
 
+func tobi_job(base: Dictionary) -> Dictionary:
+	return JobData.merge(base, {"extra_files": [
+		{"path": "chart.sh", "type": "script", "x": false, "opens": "chart.png", "copies": 3, "prints": ["drawing chart..."]},
+		{"path": "chart.png", "type": "picture", "open_size": [160, 90], "asset": "res://assets/ball_1.png"},
+		{"path": "secret.txt", "type": "text", "r": false, "lines": ["hidden"]},
+	]})
+
+
+func check_permissions(base: Dictionary) -> void:
+	var sh = Shell.new(tobi_job(base))
+	check(sh.run("./chart.sh").out == ["sh: ./chart.sh: Permission denied"], "perm: script without +x refused")
+	check("Operation not permitted" in sh.run("chmod +x chart.sh").out[0], "perm: chmod on a client file refused")
+	check(sh.run("cp chart.sh ~").out.is_empty() and sh.fs.exists("/home/you/chart.sh"), "perm: cp to home")
+	check(sh.run("cp chart.sh /clients/x.sh").out[0].ends_with("Permission denied") or sh.run("cp chart.sh /clients/x.sh").out[0].contains("No such"), "perm: cp into a client folder refused")
+	sh.run("cd ~")
+	check(sh.run("ls -l").out[0].begins_with("-rw-r--r-- you"), "perm: ls -l before chmod: " + str(sh.run("ls -l").out))
+	check(sh.run("chmod +x chart.sh").out.is_empty(), "perm: chmod +x on own file")
+	check(sh.run("ls -l").out[0].begins_with("-rwxr-xr-x you"), "perm: ls -l after chmod")
+	var r: Dictionary = sh.run("./chart.sh")
+	check(r.out == ["drawing chart..."] and r.launch.count == 4 and r.launch.path == "/clients/dex/chart.png", "perm: script runs and launches 4 windows")
+	check(sh.run("chmod -x chart.sh").out.is_empty() and "Permission denied" in sh.run("./chart.sh").out[0], "perm: chmod -x stops it again")
+	check(sh.run("chmod 755 chart.sh").out.is_empty() and sh.run("./chart.sh").launch.count == 4, "perm: octal chmod")
+	check("invalid mode" in sh.run("chmod lol chart.sh").out[0], "perm: bad mode")
+	check(sh.run("open chart.sh").out[0].contains("./chart.sh"), "perm: open on a script points at ./")
+	sh.run("cd /clients/dex")
+	check(sh.run("cat secret.txt").out == ["cat: secret.txt: Permission denied"], "perm: unreadable file")
+	check("Permission denied" in sh.run("grep hidden secret.txt").out[0], "perm: grep unreadable")
+	check("Permission denied" in sh.run("cp secret.txt ~").out[0], "perm: cp unreadable")
+	check(sh.run("kill").out == [base.shell.kill_usage], "kill usage")
+	check(sh.run("kill 999", [{"pid": 101, "cmd": "sh", "protected": true}]).out[0] == "kill: (999) - No such process", "kill missing pid")
+	check("holding this whole machine" in sh.run("kill 101", [{"pid": 101, "cmd": "sh", "protected": true}]).out[0], "kill protected program")
+	check(sh.run("kill 140", [{"pid": 140, "cmd": "pixview x"}]).kill == 140, "kill a viewer")
+
+
 func _initialize() -> void:
 	var c := JobData.load_campaign("res://data/campaign.json")
 	check(c.jobs.size() == 2, "campaign has 2 jobs")
@@ -158,6 +192,7 @@ func _initialize() -> void:
 	amb = sh.complete("open ball_")
 	check(amb.options.size() == 5, "tab: lists options when stuck")
 	check_file_system(job)
+	check_permissions(job)
 	var sh2 = Shell.new(c.jobs[1])
 	r = sh2.run("grep Gold notes.txt")
 	check(r.out.is_empty(), "job 2: notes.txt only has lowercase gold")
@@ -211,6 +246,30 @@ func _initialize() -> void:
 	check(desk.email.last_reply == job2.replies.right, "job 2 won")
 	await create_timer(2.6).timeout
 	check(main.current.get_script().resource_path.ends_with("end_screen.gd"), "end screen after last job")
+	var tobi := tobi_job(c.jobs[0])
+	var d2 = main.current
+	main.start_game()
+	await process_frame
+	d2 = main.current
+	d2.load_job(tobi)
+	d2.run_command("cp chart.sh ~")
+	d2.run_command("chmod +x ~/chart.sh")
+	d2.run_command("~/chart.sh")
+	await process_frame
+	check(d2.pictures.size() == 4, "desktop: script floods 4 chart windows (%d)" % d2.pictures.size())
+	var pids: Array = d2.pictures.values().map(func(w): return w.pid)
+	check(d2.pictures.values()[0]._title_label.text.begins_with("[%d] chart.png" % pids[0]), "desktop: PID shown in title bar")
+	check(d2.term._title_label.text == "[101] terminal" and d2.email._title_label.text == "[102] mail", "desktop: terminal/mail show PIDs")
+	d2.run_command("kill %d" % pids[1])
+	d2.run_command("kill %d" % pids[2])
+	await process_frame
+	check(d2.pictures.size() == 2, "desktop: kill closes windows")
+	d2.run_command("kill 101")
+	check(is_instance_valid(d2.term) and d2.term.output.get_parsed_text().contains("holding this whole machine"), "desktop: terminal can't be killed")
+	d2.run_command("ps")
+	check(d2.term.output.get_parsed_text().contains("pixview chart.png"), "desktop: ps lists viewers")
+	main.show_end("x")
+	await process_frame
 	main.current.again.emit()
 	await process_frame
 	check(main.current.job == c.jobs[0] and main.current.pictures.is_empty(), "play again restarts at job 1, clean")

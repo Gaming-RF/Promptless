@@ -48,8 +48,18 @@ func _init() -> void:
 	resized.connect(_layout)
 
 
+var pid := 0
+var _base_title := ""
+
+
 func set_title(t: String) -> void:
-	_title_label.text = t
+	_base_title = t
+	_title_label.text = ("[%d] %s" % [pid, t]) if pid > 0 else t
+
+
+func set_pid(p: int) -> void:
+	pid = p
+	set_title(_base_title)
 
 
 func set_content_size(s: Vector2) -> void:

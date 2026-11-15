@@ -1,7 +1,7 @@
 extends RefCounted
 
 const VFS = preload("res://scripts/vfs.gd")
-const COMMANDS := ["cd", "grep", "ls", "man", "open"]
+const COMMANDS := ["cd", "chmod", "cp", "grep", "kill", "ls", "man", "open"]
 const COURTESY := ["alias", "cat", "clear", "echo", "head", "help", "history", "less", "mv", "ps", "pwd"]
 
 var job: Dictionary
@@ -23,7 +23,7 @@ func files() -> Array:
 
 
 func run(line: String, programs: Array = []) -> Dictionary:
-	var res := {"out": [], "hint": [], "open": "", "clear": false}
+	var res := {"out": [], "hint": [], "open": "", "clear": false, "kill": 0, "launch": {}}
 	line = line.strip_edges()
 	if line.is_empty():
 		return res
@@ -33,7 +33,16 @@ func run(line: String, programs: Array = []) -> Dictionary:
 		return res
 	var args := tokenize(line)
 	var cmd: String = args.pop_front()
+	if "/" in cmd:
+		_exec(cmd, res)
+		return res
 	match cmd:
+		"cp":
+			_cp(args, res)
+		"chmod":
+			_chmod(args, res)
+		"kill":
+			_kill(args, res, programs)
 		"ls":
 			_ls(args, res)
 		"cd":
@@ -179,10 +188,12 @@ func _missing(cmd: String, typed: String, res: Dictionary, whole := "") -> void:
 
 func _ls(args: Array, res: Dictionary) -> void:
 	var show_hidden := false
+	var long := false
 	var targets: Array = []
 	for a in args:
 		if a.begins_with("-"):
 			show_hidden = show_hidden or "a" in a
+			long = long or "l" in a
 		else:
 			targets.append(a)
 	if targets.is_empty():
@@ -199,7 +210,11 @@ func _ls(args: Array, res: Dictionary) -> void:
 			var names: Array = fs.children(path, show_hidden)
 			if show_hidden:
 				names = [".", ".."] + names
-			if not names.is_empty():
+			if long:
+				for n in names:
+					var p: String = fs.absolute(path, n)
+					res.out.append("%s %-6s %s" % [fs.mode_string(p), fs.owner(p), n])
+			elif not names.is_empty():
 				res.out.append("  ".join(names))
 
 
@@ -251,6 +266,10 @@ func _grep(args: Array, res: Dictionary) -> void:
 			res.out.append("grep: %s: Is a directory" % f)
 			missing = true
 			continue
+		if not fs.can_read(path):
+			res.out.append("grep: %s: Permission denied" % f)
+			missing = true
+			continue
 		if n.type != "text":
 			continue
 		for l in n.lines:
@@ -273,6 +292,8 @@ func _print_text(cmd: String, args: Array, res: Dictionary, limit: int) -> void:
 	var n: Dictionary = fs.node(path)
 	if n.type == "dir":
 		res.out.append("%s: %s: Is a directory" % [cmd, args[0]])
+	elif not fs.can_read(path):
+		res.out.append("%s: %s: Permission denied" % [cmd, args[0]])
 	elif n.type != "text":
 		res.out.append(job.shell.cat_picture.format({"cmd": cmd, "file": args[0]}))
 	else:
@@ -290,6 +311,10 @@ func _open(args: Array, res: Dictionary) -> void:
 	var n: Dictionary = fs.node(path)
 	if n.type == "dir":
 		res.out.append("open: %s: Is a directory" % args[0])
+	elif not fs.can_read(path):
+		res.out.append("open: %s: Permission denied" % args[0])
+	elif n.type == "script":
+		res.out.append(job.shell.open_script.format({"file": args[0]}))
 	elif n.type == "text":
 		res.out.append(job.shell.open_text.format({"n": n.lines.size()}))
 	else:
@@ -317,3 +342,99 @@ func _mv(args: Array, res: Dictionary) -> void:
 		res.out.append("mv: cannot move '%s' into itself" % args[0])
 		return
 	fs.move(src, dest)
+
+
+func _cp(args: Array, res: Dictionary) -> void:
+	if args.size() < 2:
+		res.out.append(job.shell.cp_usage)
+		return
+	var src := resolve(args[0])
+	if src == "":
+		_missing("cp", args[0], res)
+		return
+	if fs.is_dir(src):
+		res.out.append("cp: -r not specified; omitting directory '%s'" % args[0])
+		return
+	if not fs.can_read(src):
+		res.out.append("cp: cannot open '%s' for reading: Permission denied" % args[0])
+		return
+	var dest: String = fs.absolute(cwd, args[1])
+	if fs.is_dir(dest):
+		dest = dest + "/" + src.get_file()
+	if not fs.is_dir(dest.get_base_dir()):
+		res.out.append("cp: cannot create '%s': No such file or directory" % args[1])
+	elif not fs.writable(dest.get_base_dir()):
+		res.out.append("cp: cannot create '%s': Permission denied" % args[1])
+	else:
+		fs.add_file(dest, fs.node(src).duplicate(true))
+
+
+func _chmod(args: Array, res: Dictionary) -> void:
+	if args.size() < 2:
+		res.out.append(job.shell.chmod_usage)
+		return
+	var mode: String = args[0]
+	var path := resolve(args[1])
+	if path == "":
+		res.out.append("chmod: cannot access '%s': No such file or directory" % args[1])
+		return
+	var re := RegEx.new()
+	re.compile("^[ugoa]*([+-])([rwx]+)$")
+	var m := re.search(mode)
+	var octal := mode.is_valid_int() and mode.length() == 3
+	if m == null and not octal:
+		res.out.append("chmod: invalid mode: '%s'" % mode)
+		return
+	if not fs.writable(path):
+		res.out.append("chmod: changing permissions of '%s': Operation not permitted" % args[1])
+		return
+	var n: Dictionary = fs.node(path)
+	if octal:
+		var d := int(mode[0])
+		n.r = d & 4 != 0
+		n.x = d & 1 != 0
+	else:
+		var on := m.get_string(1) == "+"
+		for ch in m.get_string(2):
+			if ch == "r":
+				n.r = on
+			elif ch == "x":
+				n.x = on
+
+
+func _kill(args: Array, res: Dictionary, programs: Array) -> void:
+	var nums := args.filter(func(a): return not a.begins_with("-"))
+	if nums.is_empty():
+		res.out.append(job.shell.kill_usage)
+		return
+	var pid := String(nums[0]).to_int()
+	if not String(nums[0]).is_valid_int():
+		res.out.append("kill: %s: arguments must be process numbers" % nums[0])
+		return
+	for p in programs:
+		if p.pid == pid:
+			if p.get("protected", false):
+				res.out.append(job.shell.kill_protected.format({"pid": pid, "cmd": p.cmd}))
+			else:
+				res.kill = pid
+			return
+	res.out.append("kill: (%d) - No such process" % pid)
+
+
+func _exec(cmd: String, res: Dictionary) -> void:
+	var path := resolve(cmd)
+	if path == "":
+		res.out.append("sh: %s: No such file or directory" % cmd)
+		return
+	var n: Dictionary = fs.node(path)
+	if n.type == "dir":
+		res.out.append("sh: %s: Is a directory" % cmd)
+	elif not fs.can_exec(path) or not fs.can_read(path):
+		res.out.append("sh: %s: Permission denied" % cmd)
+	elif n.type != "script":
+		res.out.append("sh: %s: cannot execute binary file" % cmd)
+	else:
+		res.out.append_array(n.get("prints", []))
+		if n.has("opens"):
+			var target: String = n.opens if String(n.opens).begins_with("/") else job.folder + "/" + n.opens
+			res.launch = {"path": target, "count": 1 + int(n.get("copies", 0))}

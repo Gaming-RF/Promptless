@@ -2,10 +2,12 @@ extends RefCounted
 
 var nodes := {}
 var home := "/home/you"
+var client_user := "client"
 
 
 func _init(job: Dictionary) -> void:
 	home = job.get("home", home)
+	client_user = String(job.client.get("user", job.client.name)).to_lower()
 	add_dir("/")
 	add_dir(home)
 	add_dir(job.folder)
@@ -93,6 +95,27 @@ func node(path: String) -> Dictionary:
 
 func writable(path: String) -> bool:
 	return path == home or path.begins_with(home + "/")
+
+
+func owner(path: String) -> String:
+	return home.get_file() if writable(path) else client_user
+
+
+func can_read(path: String) -> bool:
+	return node(path).get("r", true)
+
+
+func can_exec(path: String) -> bool:
+	var n := node(path)
+	return n.get("type", "") == "dir" or n.get("x", false)
+
+
+func mode_string(path: String) -> String:
+	var n := node(path)
+	var r := "r" if can_read(path) else "-"
+	var w := "w" if writable(path) else "-"
+	var x := "x" if can_exec(path) else "-"
+	return ("d" if n.get("type", "") == "dir" else "-") + r + w + x + r + "-" + x + r + "-" + x
 
 
 func children(dir: String, show_hidden := false) -> Array:

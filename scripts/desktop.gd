@@ -43,6 +43,7 @@ func _ready() -> void:
 	add_child(email)
 	email.position = EMAIL_POS
 	email.build(Vector2(302, 182))
+	email.set_pid(102)
 	email.command_clicked.connect(func(cmd): term.paste(cmd))
 	email.send_pressed.connect(send)
 	email.focused.connect(_focus)
@@ -51,6 +52,7 @@ func _ready() -> void:
 	add_child(term)
 	term.position = Vector2(8, 208)
 	term.build(job.shell.prompt, Vector2(302, 132))
+	term.set_pid(101)
 	term.command_entered.connect(run_command)
 	term.tab_requested.connect(_on_tab)
 	term.typed.connect(func(): sfx.play("type"))
@@ -101,13 +103,30 @@ func run_command(line: String) -> void:
 		term.print_line(h, Palette.DIM)
 	if r.open != "":
 		open_picture(r.open)
+	if r.kill != 0:
+		kill(r.kill)
+	if not r.launch.is_empty():
+		for i in r.launch.count:
+			open_picture(r.launch.path, true)
 
 
 func running_programs() -> Array:
-	var list: Array = [{"pid": 101, "cmd": "sh"}, {"pid": 102, "cmd": "mail"}]
-	for f in pictures:
-		list.append({"pid": pictures[f].pid, "cmd": "%s %s" % [job.shell.viewer, f.get_file()]})
+	var list: Array = [
+		{"pid": term.pid, "cmd": "sh", "protected": true},
+		{"pid": email.pid, "cmd": "mail", "protected": true},
+	]
+	for key in pictures:
+		var w = pictures[key]
+		list.append({"pid": w.pid, "cmd": "%s %s" % [job.shell.viewer, w.file.get_file()]})
 	return list
+
+
+func kill(pid: int) -> void:
+	for key in pictures.keys():
+		if pictures[key].pid == pid:
+			pictures[key].queue_free()
+			pictures.erase(key)
+			return
 
 
 var _next_pid := 140
@@ -118,13 +137,13 @@ func picture(name: String):
 	if pictures.has(path):
 		return pictures[path]
 	for p in pictures:
-		if p.get_file() == name:
+		if pictures[p].file.get_file() == name:
 			return pictures[p]
 	return null
 
 
-func open_picture(file: String):
-	if pictures.has(file):
+func open_picture(file: String, extra_copy := false):
+	if pictures.has(file) and not extra_copy:
 		_focus(pictures[file], false)
 		return pictures[file]
 	var info: Dictionary = shell.fs.node(file)
@@ -139,9 +158,9 @@ func open_picture(file: String):
 	bounce_in(w, w.position)
 	w.focused.connect(_focus)
 	w.snapshot_requested.connect(snapshot)
-	w.pid = _next_pid
+	w.set_pid(_next_pid)
 	_next_pid += 1
-	pictures[file] = w
+	pictures[file if not pictures.has(file) else "%s#%d" % [file, w.pid]] = w
 	_focus(w, false)
 	return w
 

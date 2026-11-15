@@ -5,7 +5,6 @@ signal snapshot_requested(win)
 const PictureView = preload("res://scripts/picture_view.gd")
 
 var file := ""
-var pid := 0
 var view := PictureView.new()
 var _flash := ColorRect.new()
 var _readout: Label

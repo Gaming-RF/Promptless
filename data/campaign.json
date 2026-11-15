@@ -33,7 +33,8 @@
 			"open_usage": "usage: open FILE",
 			"open_text": "{n} lines of chaos. Try grep.",
 			"help": [
-				"needed: ls  grep  open  cd  man",
+				"needed: ls grep open cd man",
+				"        cp chmod kill",
 				"also: cat head less echo pwd",
 				"      history alias ps clear mv",
 				"Tab completes. Up/Down = history.",
@@ -51,10 +52,11 @@
 			"man": {
 				"ls": [
 					"LS(1)",
-					"  ls [-a] [FOLDER]",
+					"  ls [-a] [-l] [FOLDER]",
 					"  List the files in a folder.",
 					"  -a   also list hidden files,",
-					"       the ones whose names start with ."
+					"       the ones whose names start with .",
+					"  -l   show permissions and owners"
 				],
 				"grep": [
 					"GREP(1)",
@@ -107,8 +109,31 @@
 					"PS(1)",
 					"  ps",
 					"  List running programs and their numbers."
+				],
+				"cp": [
+					"CP(1)",
+					"  cp FILE DEST",
+					"  Copy a file. Client files aren't yours:",
+					"  copy them home (~) to change them."
+				],
+				"chmod": [
+					"CHMOD(1)",
+					"  chmod +r FILE   let it be read",
+					"  chmod +x FILE   let a script run",
+					"  Only works on files you own (in ~)."
+				],
+				"kill": [
+					"KILL(1)",
+					"  kill PID",
+					"  Stop a program. Every window shows",
+					"  its number in the title bar. See ps."
 				]
-			}
+			},
+			"cp_usage": "usage: cp FILE DEST",
+			"chmod_usage": "usage: chmod +x FILE",
+			"kill_usage": "usage: kill PID   (the number in a window's title bar)",
+			"kill_protected": "kill: ({pid}) - not that one. {cmd} is holding this whole machine together.",
+			"open_script": "open: {file} is a script. run it with ./{file}"
 		},
 		"ui": {
 			"attach_none": "attach: none (use SNAP)",
